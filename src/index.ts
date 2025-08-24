@@ -5,6 +5,8 @@
 import { z } from 'zod';
 import { createModernESPNServer } from './modern-server.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { ESPNHttpServer } from './http-server.js';
+import express from 'express';
 
 // Configuration schema for Smithery validation
 export const configSchema = z.object({
@@ -12,15 +14,23 @@ export const configSchema = z.object({
   maxConcurrentRequests: z.number().min(1).max(100).default(10),
   enableStreaming: z.boolean().default(true),
   debug: z.boolean().default(false),
+  port: z.number().min(1).max(65535).default(3000),
+  host: z.string().default('localhost'),
 });
 
 export type Config = z.infer<typeof configSchema>;
+
+interface SmitheryServerResult {
+  server?: Server;
+  httpServer?: express.Application;
+  start?: () => Promise<void>;
+}
 
 /**
  * Smithery-compatible server function
  * Creates and returns the ESPN MCP server with the provided configuration
  */
-export default async function createESPNMCPServer({ sessionId, config }: { sessionId?: string; config?: Partial<Config> } = {}): Promise<Server> {
+export default async function createESPNMCPServer({ sessionId, config }: { sessionId?: string; config?: Partial<Config> } = {}): Promise<Server | SmitheryServerResult> {
   // Validate configuration using Zod schema with defaults
   const validatedConfig = configSchema.parse(config || {});
   
@@ -34,15 +44,28 @@ export default async function createESPNMCPServer({ sessionId, config }: { sessi
   };
 
   try {
-    // Create and return the modern ESPN server
-    const server = await createModernESPNServer();
-    
-    if (validatedConfig.debug) {
-      console.log('ESPN MCP Server initialized with config:', espnConfig);
+    // For HTTP transport, create HTTP server
+    if (process.env.SMITHERY_TRANSPORT === 'http' || validatedConfig.port !== 3000) {
+      const httpServer = new ESPNHttpServer();
+      
+      // Return HTTP server with start method for Smithery
+      return {
+        httpServer: httpServer['app'], // Access the express app
+        start: async () => {
+          await httpServer.start(validatedConfig.port);
+        }
+      };
+    } else {
+      // Create and return the modern ESPN server for stdio transport
+      const server = await createModernESPNServer();
+      
+      if (validatedConfig.debug) {
+        console.log('ESPN MCP Server initialized with config:', espnConfig);
+      }
+      
+      // Return the server instance for Smithery to connect to appropriate transport
+      return server;
     }
-    
-    // Return the server instance for Smithery to connect to appropriate transport
-    return server;
   } catch (error) {
     console.error('Failed to create ESPN MCP Server:', error);
     throw error;
