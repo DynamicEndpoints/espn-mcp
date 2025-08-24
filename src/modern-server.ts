@@ -849,10 +849,18 @@ export async function runHTTPServer(port = 3000) {
   }
 }
 
-// Auto-detect transport (ES modules compatible)
-const isMainModule = import.meta.url === `file://${process.argv[1]}` || 
-                    import.meta.url.endsWith('/modern-server.js') ||
-                    process.argv[1]?.endsWith('modern-server.js');
+// Auto-detect transport (compatible with both ESM and CommonJS)
+let isMainModule = false;
+
+// Check if running as ESM module
+if (typeof import.meta !== 'undefined' && import.meta.url) {
+  isMainModule = import.meta.url === `file://${process.argv[1]}` || 
+                 import.meta.url.endsWith('/modern-server.js') ||
+                 import.meta.url.endsWith('\\modern-server.js');
+} else {
+  // Fallback for CommonJS - check if this is the main module
+  isMainModule = require.main === module;
+}
 
 if (isMainModule) {
   const args = process.argv.slice(2);

@@ -1011,8 +1011,20 @@ export async function runHTTPServer(port = 3000) {
   return httpServer;
 }
 
-// Auto-detect transport
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Auto-detect transport (compatible with both ESM and CommonJS)
+let isMainModule = false;
+
+// Check if running as ESM module
+if (typeof import.meta !== 'undefined' && import.meta.url) {
+  isMainModule = import.meta.url === `file://${process.argv[1]}` || 
+                 import.meta.url.endsWith('/enhanced-server.js') ||
+                 import.meta.url.endsWith('\\enhanced-server.js');
+} else {
+  // Fallback for CommonJS - check if this is the main module
+  isMainModule = require.main === module;
+}
+
+if (isMainModule) {
   const args = process.argv.slice(2);
   
   if (args.includes('--http')) {

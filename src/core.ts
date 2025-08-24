@@ -558,8 +558,20 @@ export async function main() {
 // Export for testing and other modules
 export { server, espnService, ESPN_TOOLS };
 
-// Start server if this is the main module
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Start server if this is the main module (compatible with both ESM and CommonJS)
+let isMainModule = false;
+
+// Check if running as ESM module
+if (typeof import.meta !== 'undefined' && import.meta.url) {
+  isMainModule = import.meta.url === `file://${process.argv[1]}` || 
+                 import.meta.url.endsWith('/core.js') ||
+                 import.meta.url.endsWith('\\core.js');
+} else {
+  // Fallback for CommonJS - check if this is the main module
+  isMainModule = require.main === module;
+}
+
+if (isMainModule) {
   main().catch((error) => {
     console.error('Server error:', error);
     process.exit(1);
