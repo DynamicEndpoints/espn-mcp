@@ -3,7 +3,7 @@ import cors from 'cors';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { randomUUID } from 'crypto';
-import { ESPNLazyServer } from './lazy-server-core.js';
+import { ESPNLazyServer } from './lazy-server.js';
 
 class ESPNHttpServer {
   private app: express.Application;

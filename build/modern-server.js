@@ -10,12 +10,10 @@ import cors from "cors";
 import { EventEmitter } from "events";
 // Modern cache implementation
 class ModernCache extends EventEmitter {
-    defaultTtl;
-    cache = new Map();
-    cleanupInterval;
     constructor(defaultTtl = 300000) {
         super();
         this.defaultTtl = defaultTtl;
+        this.cache = new Map();
         this.cleanupInterval = setInterval(() => this.cleanup(), 60000);
     }
     async get(key, fetcher, ttl = this.defaultTtl) {
@@ -49,9 +47,8 @@ class ModernCache extends EventEmitter {
 }
 // ESPN API with modern patterns
 class ModernESPNClient {
-    cache;
-    baseUrl = "https://site.api.espn.com/apis/site/v2/sports";
     constructor() {
+        this.baseUrl = "https://site.api.espn.com/apis/site/v2/sports";
         this.cache = new ModernCache(300000); // 5 minutes
     }
     async fetchData(endpoint) {
@@ -725,16 +722,30 @@ export async function runSTDIOServer() {
 }
 // HTTP Server
 export async function runHTTPServer(port = 3000) {
-    const app = createHTTPServer();
-    const httpServer = app.listen(port, '127.0.0.1', () => {
-        console.error(`Modern ESPN MCP Server (v2.0) running on http://127.0.0.1:${port}/mcp`);
-        console.error('Features: Resources, Prompts, Tools, HTTP Streaming, Session Management');
-    });
-    process.on('SIGTERM', () => {
-        console.error('Shutting down gracefully...');
-        httpServer.close(() => process.exit(0));
-    });
-    return httpServer;
+    try {
+        const app = createHTTPServer();
+        const httpServer = app.listen(port, '127.0.0.1', () => {
+            console.error(`Modern ESPN MCP Server (v2.0) running on http://127.0.0.1:${port}/mcp`);
+            console.error('Features: Resources, Prompts, Tools, HTTP Streaming, Session Management');
+        });
+        httpServer.on('error', (error) => {
+            console.error('HTTP Server error:', error);
+            process.exit(1);
+        });
+        process.on('SIGTERM', () => {
+            console.error('Shutting down gracefully...');
+            httpServer.close(() => process.exit(0));
+        });
+        process.on('SIGINT', () => {
+            console.error('Shutting down gracefully...');
+            httpServer.close(() => process.exit(0));
+        });
+        return httpServer;
+    }
+    catch (error) {
+        console.error('Failed to start HTTP server:', error);
+        process.exit(1);
+    }
 }
 // Auto-detect transport (ES modules compatible)
 const isMainModule = import.meta.url === `file://${process.argv[1]}` ||
@@ -742,12 +753,21 @@ const isMainModule = import.meta.url === `file://${process.argv[1]}` ||
     process.argv[1]?.endsWith('modern-server.js');
 if (isMainModule) {
     const args = process.argv.slice(2);
+    console.error('Starting server with args:', args);
     if (args.includes('--http')) {
         const portIndex = args.indexOf('--port');
         const port = portIndex !== -1 ? parseInt(args[portIndex + 1]) : 3000;
-        runHTTPServer(port).catch(console.error);
+        console.error(`Starting HTTP server on port ${port}...`);
+        runHTTPServer(port).catch((error) => {
+            console.error('HTTP server startup error:', error);
+            process.exit(1);
+        });
     }
     else {
-        runSTDIOServer().catch(console.error);
+        console.error('Starting STDIO server...');
+        runSTDIOServer().catch((error) => {
+            console.error('STDIO server startup error:', error);
+            process.exit(1);
+        });
     }
 }

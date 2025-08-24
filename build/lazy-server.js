@@ -258,6 +258,15 @@ class ESPNLazyServer {
             console.error('Unhandled Rejection at:', promise, 'reason:', reason);
         });
     }
+    getServer() {
+        return this.server;
+    }
+    getCacheStats() {
+        return this.apiService.getCacheStats();
+    }
+    clearCache() {
+        this.apiService.clearCache();
+    }
     async run() {
         try {
             this.transport = new StdioServerTransport();
@@ -272,3 +281,4 @@ class ESPNLazyServer {
 }
 const server = new ESPNLazyServer();
 server.run().catch(console.error);
+export { ESPNLazyServer };

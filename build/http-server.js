@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { randomUUID } from 'crypto';
-import { ESPNLazyServer } from './lazy-server-core.js';
+import { ESPNLazyServer } from './lazy-server.js';
 class ESPNHttpServer {
     constructor() {
         this.transports = new Map();

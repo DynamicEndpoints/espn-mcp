@@ -846,20 +846,35 @@ export function createHTTPStreamingServer(): express.Application {
             let response;
             
             // Handle different request types
-            if (request.method === 'tools/list') {
-              response = await server.request(request, server);
-            } else if (request.method === 'tools/call') {
-              response = await server.request(request, server);
-            } else if (request.method === 'resources/list') {
-              response = await server.request(request, server);
-            } else if (request.method === 'resources/read') {
-              response = await server.request(request, server);
-            } else if (request.method === 'prompts/list') {
-              response = await server.request(request, server);
-            } else if (request.method === 'prompts/get') {
-              response = await server.request(request, server);
+            if (request.method === 'initialize') {
+              response = {
+                jsonrpc: "2.0",
+                result: {
+                  protocolVersion: "2024-11-05",
+                  capabilities: {
+                    resources: { subscribe: true, listChanged: true },
+                    prompts: { listChanged: true },
+                    tools: { listChanged: true },
+                    logging: {},
+                    experimental: {
+                      streaming: true,
+                      sessionManagement: true
+                    }
+                  },
+                  serverInfo: {
+                    name: "enhanced-espn-server",
+                    version: "2.0.0"
+                  }
+                },
+                id: request.id
+              };
             } else {
-              response = { error: { code: -32601, message: "Method not found" } };
+              // For other requests, return method not implemented for now
+              response = {
+                jsonrpc: "2.0",
+                error: { code: -32601, message: `Method not implemented: ${request.method}` },
+                id: request.id
+              };
             }
             
             if (sessionManager && response) {
@@ -880,16 +895,34 @@ export function createHTTPStreamingServer(): express.Application {
           }
         } else {
           // Return single JSON response
-          try {
-            const response = await server.request(request, server);
+          // For now, just handle initialize method, return error for others
+          if (request.method === 'initialize') {
+            const response = {
+              jsonrpc: "2.0",
+              result: {
+                protocolVersion: "2024-11-05",
+                capabilities: {
+                  resources: { subscribe: true, listChanged: true },
+                  prompts: { listChanged: true },
+                  tools: { listChanged: true },
+                  logging: {},
+                  experimental: {
+                    streaming: true,
+                    sessionManagement: true
+                  }
+                },
+                serverInfo: {
+                  name: "enhanced-espn-server",
+                  version: "2.0.0"
+                }
+              },
+              id: request.id
+            };
             res.json(response);
-          } catch (error) {
+          } else {
             res.status(500).json({
               jsonrpc: "2.0",
-              error: {
-                code: -32603,
-                message: error instanceof Error ? error.message : String(error)
-              },
+              error: { code: -32601, message: `Method not implemented: ${request.method}` },
               id: request.id || null
             });
           }

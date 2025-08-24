@@ -7,8 +7,10 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 // Lazy Loading Cache Implementation
 class LazyCache {
-    cache = new Map();
-    activeLoads = new Map();
+    constructor() {
+        this.cache = new Map();
+        this.activeLoads = new Map();
+    }
     async get(key, loader, ttl = 300000 // 5 minutes default
     ) {
         // Check if we have valid cached data
@@ -185,18 +187,20 @@ const ESPN_TOOLS = [
 ];
 // Lazy ESPN Service
 class LazyESPNService {
-    cache = new LazyCache();
-    baseURL = 'http://site.api.espn.com/apis/site/v2/sports';
-    // Cache TTL per sport type (milliseconds)
-    cacheTTL = {
-        nfl: 180000, // 3 minutes - moderate pace
-        nba: 60000, // 1 minute - fast-paced
-        mlb: 120000, // 2 minutes - moderate pace
-        nhl: 120000, // 2 minutes - moderate pace
-        cfb: 300000, // 5 minutes - slower updates
-        soccer: 240000, // 4 minutes - moderate pace
-        default: 300000 // 5 minutes fallback
-    };
+    constructor() {
+        this.cache = new LazyCache();
+        this.baseURL = 'http://site.api.espn.com/apis/site/v2/sports';
+        // Cache TTL per sport type (milliseconds)
+        this.cacheTTL = {
+            nfl: 180000, // 3 minutes - moderate pace
+            nba: 60000, // 1 minute - fast-paced
+            mlb: 120000, // 2 minutes - moderate pace
+            nhl: 120000, // 2 minutes - moderate pace
+            cfb: 300000, // 5 minutes - slower updates
+            soccer: 240000, // 4 minutes - moderate pace
+            default: 300000 // 5 minutes fallback
+        };
+    }
     getTTL(toolName) {
         // Extract sport from tool name
         const sport = this.extractSport(toolName);

@@ -32,18 +32,20 @@
     "k8s:delete": "kubectl delete -f k8s-deployment.yaml"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "0.6.0",
+    "@modelcontextprotocol/sdk": "^1.17.4",
     "axios": "^1.7.9",
+    "cors": "^2.8.5",
     "date-fns": "^4.1.0",
-    "zod": "^3.22.4",
     "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@types/express": "^4.17.21",
     "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
     "typescript": "^5.3.2"
   },
-  "files": ["build"]
+  "files": [
+    "build"
+  ]
 }
