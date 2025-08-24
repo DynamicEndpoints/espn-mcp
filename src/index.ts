@@ -4,7 +4,7 @@
  */
 import { z } from 'zod';
 import { createModernESPNServer } from './modern-server.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
 // Configuration schema for Smithery validation
 export const configSchema = z.object({
@@ -20,13 +20,13 @@ export type Config = z.infer<typeof configSchema>;
  * Smithery-compatible server function
  * Creates and returns the ESPN MCP server with the provided configuration
  */
-export default async function createESPNMCPServer({ sessionId, config }: { sessionId?: string; config?: Partial<Config> } = {}) {
+export default async function createESPNMCPServer({ sessionId, config }: { sessionId?: string; config?: Partial<Config> } = {}): Promise<Server> {
   // Validate configuration using Zod schema with defaults
   const validatedConfig = configSchema.parse(config || {});
   
   // Environment variables for ESPN API
   const espnConfig = {
-    baseUrl: process.env.ESPN_API_BASE_URL || 'http://site.api.espn.com/apis/site/v2/sports',
+    baseUrl: process.env.ESPN_API_BASE_URL || 'https://site.api.espn.com/apis/site/v2/sports',
     cacheTimeout: validatedConfig.cacheTimeout,
     maxConcurrentRequests: validatedConfig.maxConcurrentRequests,
     enableStreaming: validatedConfig.enableStreaming,
@@ -41,10 +41,7 @@ export default async function createESPNMCPServer({ sessionId, config }: { sessi
       console.log('ESPN MCP Server initialized with config:', espnConfig);
     }
     
-    // Connect to stdio transport for Smithery compatibility
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-    
+    // Return the server instance for Smithery to connect to appropriate transport
     return server;
   } catch (error) {
     console.error('Failed to create ESPN MCP Server:', error);
