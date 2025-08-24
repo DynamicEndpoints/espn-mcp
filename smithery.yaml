@@ -1,0 +1,39 @@
+runtime: "typescript"
+env:
+  NODE_ENV: "production"
+  ESPN_API_BASE_URL: "https://site.api.espn.com/apis/site/v2/sports"
+  LOG_LEVEL: "info"
+startCommand:
+  type: "http"
+  configSchema:
+    type: "object"
+    properties:
+      cacheTimeout:
+        type: "number"
+        title: "Cache Timeout"
+        description: "Cache timeout in milliseconds"
+        default: 300000
+        minimum: 30000
+        maximum: 1800000
+      maxConcurrentRequests:
+        type: "number"
+        title: "Max Concurrent Requests"
+        description: "Maximum number of concurrent ESPN API requests"
+        default: 5
+        minimum: 1
+        maximum: 20
+      enableStreaming:
+        type: "boolean"
+        title: "Enable HTTP Streaming"
+        description: "Enable Server-Side Events for real-time updates"
+        default: true
+      debug:
+        type: "boolean"
+        title: "Debug Mode"
+        description: "Enable debug logging"
+        default: false
+  exampleConfig:
+    cacheTimeout: 300000
+    maxConcurrentRequests: 5
+    enableStreaming: true
+    debug: false

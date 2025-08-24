@@ -1,0 +1,182 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: espn-mcp-server
+  namespace: mcp-services
+  labels:
+    app: espn-mcp-server
+    version: v2.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: espn-mcp-server
+  template:
+    metadata:
+      labels:
+        app: espn-mcp-server
+        version: v2.0.0
+    spec:
+      containers:
+      - name: espn-mcp-server
+        image: espn-mcp-server:2.0.0
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: ESPN_CACHE_TTL
+          valueFrom:
+            configMapKeyRef:
+              name: espn-config
+              key: cache-ttl
+        - name: ESPN_API_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: espn-config
+              key: api-timeout
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: espn-data
+          mountPath: /app/data
+        - name: espn-logs
+          mountPath: /app/logs
+      volumes:
+      - name: espn-data
+        persistentVolumeClaim:
+          claimName: espn-data-pvc
+      - name: espn-logs
+        persistentVolumeClaim:
+          claimName: espn-logs-pvc
+      nodeSelector:
+        node-type: worker
+      tolerations:
+      - key: "mcp-services"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: espn-mcp-service
+  namespace: mcp-services
+  labels:
+    app: espn-mcp-server
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: espn-mcp-server
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: espn-config
+  namespace: mcp-services
+data:
+  cache-ttl: "300000"
+  api-timeout: "10000"
+  log-level: "info"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: espn-data-pvc
+  namespace: mcp-services
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: fast-ssd
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: espn-logs-pvc
+  namespace: mcp-services
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+  storageClassName: standard
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: espn-mcp-hpa
+  namespace: mcp-services
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: espn-mcp-server
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Pods
+        value: 2
+        periodSeconds: 60

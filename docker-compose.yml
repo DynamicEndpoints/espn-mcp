@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  espn-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: espn-mcp-lazy
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - ESPN_CACHE_TTL=300000
+      - ESPN_API_TIMEOUT=10000
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - mcp-network
+    volumes:
+      - espn-data:/app/data
+      - espn-logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Optional: Redis for distributed caching
+  redis:
+    image: redis:7-alpine
+    container_name: espn-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - mcp-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
+  # Optional: HTTP Gateway for multiple clients
+  nginx:
+    image: nginx:alpine
+    container_name: espn-gateway
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - espn-mcp-server
+    networks:
+      - mcp-network
+    restart: unless-stopped
+
+networks:
+  mcp-network:
+    driver: bridge
+
+volumes:
+  espn-data:
+  espn-logs:
+  redis-data:
