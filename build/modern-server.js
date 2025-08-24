@@ -749,15 +749,24 @@ export async function runHTTPServer(port = 3000) {
 }
 // Auto-detect transport (compatible with both ESM and CommonJS)
 let isMainModule = false;
-// Check if running as ESM module
-if (typeof import.meta !== 'undefined' && import.meta.url) {
-    isMainModule = import.meta.url === `file://${process.argv[1]}` ||
-        import.meta.url.endsWith('/modern-server.js') ||
-        import.meta.url.endsWith('\\modern-server.js');
+try {
+    // Check if running as ESM module
+    if (typeof import.meta !== 'undefined' && import.meta.url) {
+        isMainModule = import.meta.url === `file://${process.argv[1]}` ||
+            import.meta.url.endsWith('/modern-server.js') ||
+            import.meta.url.endsWith('\\modern-server.js');
+    }
 }
-else {
-    // Fallback for CommonJS - check if this is the main module
-    isMainModule = require.main === module;
+catch (e) {
+    // Fallback for CommonJS environments
+    try {
+        // @ts-ignore - CommonJS check
+        isMainModule = require.main === module;
+    }
+    catch (e2) {
+        // Final fallback - check if this file is being executed directly
+        isMainModule = !!(process.argv[1] && process.argv[1].includes('modern-server'));
+    }
 }
 if (isMainModule) {
     const args = process.argv.slice(2);
