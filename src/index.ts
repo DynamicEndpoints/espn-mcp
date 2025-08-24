@@ -4,6 +4,7 @@
  */
 import { z } from 'zod';
 import { createModernESPNServer } from './modern-server.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 // Configuration schema for Smithery validation
 export const configSchema = z.object({
@@ -19,9 +20,9 @@ export type Config = z.infer<typeof configSchema>;
  * Smithery-compatible server function
  * Creates and returns the ESPN MCP server with the provided configuration
  */
-export default async function createESPNMCPServer(config: Partial<Config> = {}) {
+export default async function createESPNMCPServer({ sessionId, config }: { sessionId?: string; config?: Partial<Config> } = {}) {
   // Validate configuration using Zod schema with defaults
-  const validatedConfig = configSchema.parse(config);
+  const validatedConfig = configSchema.parse(config || {});
   
   // Environment variables for ESPN API
   const espnConfig = {
@@ -39,6 +40,10 @@ export default async function createESPNMCPServer(config: Partial<Config> = {}) 
     if (validatedConfig.debug) {
       console.log('ESPN MCP Server initialized with config:', espnConfig);
     }
+    
+    // Connect to stdio transport for Smithery compatibility
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
     
     return server;
   } catch (error) {
