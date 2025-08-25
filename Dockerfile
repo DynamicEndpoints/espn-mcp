@@ -31,8 +31,8 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Expose port for HTTP transport (if needed)
 EXPOSE 3000
 
-# Default command (can be overridden)
-CMD ["node", "build/lazy-server.js"]
+# Default command - use modern server for best practices compliance
+CMD ["node", "build/modern-server.js"]
 
 # Labels for better container management
 LABEL maintainer="ESPN MCP Team"

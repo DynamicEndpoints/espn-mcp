@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "description": "Modern ESPN MCP Server with resources, prompts, tools, and HTTP streaming support for the latest 2025 MCP specification",
   "type": "module",
-  "module": "./src/modern-server.ts",
+  "module": "./src/index.ts",
   "main": "./build/modern-server.js",
   "bin": {
     "espn-server": "./build/index.js",

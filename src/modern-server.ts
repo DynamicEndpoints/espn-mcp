@@ -143,39 +143,8 @@ class ModernESPNClient {
   }
 }
 
-export function createModernESPNServer(): Server {
-  const server = new Server(
-    {
-      name: "modern-espn-server",
-      version: "2.0.0",
-    },
-    {
-      capabilities: {
-        resources: {
-          subscribe: true,
-          listChanged: true
-        },
-        prompts: {
-          listChanged: true
-        },
-        tools: {
-          listChanged: true
-        },
-        logging: {},
-        experimental: {
-          httpStreaming: true,
-          sessionManagement: true,
-          resourceTemplates: true
-        }
-      },
-    }
-  );
-
-  const espnClient = new ModernESPNClient();
-  const resourceSubscriptions = new Map<string, Set<string>>();
-
-  // Tools with modern schemas
-  const tools: Tool[] = [
+// Tools with modern schemas (defined globally for HTTP handlers)
+const tools: Tool[] = [
     {
       name: "get_live_scores",
       description: "Get live scores and game information for any sport and league",
@@ -274,10 +243,10 @@ export function createModernESPNServer(): Server {
         required: ["sport"]
       }
     }
-  ];
+];
 
-  // Dynamic resources
-  const staticResources: Resource[] = [
+// Dynamic resources (defined globally for HTTP handlers)
+const staticResources: Resource[] = [
     {
       uri: "espn://live-dashboard",
       name: "Live Sports Dashboard",
@@ -302,10 +271,10 @@ export function createModernESPNServer(): Server {
       description: "Current playoff standings and scenarios across all leagues",
       mimeType: "application/json"
     }
-  ];
+];
 
-  // Interactive prompts
-  const prompts: Prompt[] = [
+// Interactive prompts (defined globally for HTTP handlers)
+const prompts: Prompt[] = [
     {
       name: "analyze_game_performance",
       description: "Analyze team or player performance in a specific game with detailed insights",
@@ -374,7 +343,38 @@ export function createModernESPNServer(): Server {
         }
       ]
     }
-  ];
+];
+
+export function createModernESPNServer(): Server {
+  const server = new Server(
+    {
+      name: "modern-espn-server",
+      version: "2.0.0",
+    },
+    {
+      capabilities: {
+        resources: {
+          subscribe: true,
+          listChanged: true
+        },
+        prompts: {
+          listChanged: true
+        },
+        tools: {
+          listChanged: true
+        },
+        logging: {},
+        experimental: {
+          httpStreaming: true,
+          sessionManagement: true,
+          resourceTemplates: true
+        }
+      },
+    }
+  );
+
+  const espnClient = new ModernESPNClient();
+  const resourceSubscriptions = new Map<string, Set<string>>();
 
   // Tool handlers
   server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -688,10 +688,308 @@ export function createModernESPNServer(): Server {
   return server;
 }
 
+// Global references for HTTP handlers
+let globalTools: Tool[] = [];
+let globalResources: Resource[] = [];
+let globalPrompts: Prompt[] = [];
+
+// Helper functions for HTTP endpoint handling
+async function handleToolCall(params: any) {
+  const { name, arguments: args } = params;
+
+  try {
+    switch (name) {
+      case "get_live_scores": {
+        const { sport, league } = args as any;
+        const espnClient = new ModernESPNClient();
+        const data = await espnClient.getScoreboard(sport, league);
+        espnClient.destroy();
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Live scores for ${sport}${league ? ` (${league})` : ''}:\n\n${JSON.stringify(data, null, 2)}`
+            }
+          ]
+        };
+      }
+
+      case "get_team_information": {
+        const { sport, league } = args as any;
+        const espnClient = new ModernESPNClient();
+        const data = await espnClient.getTeams(sport, league);
+        espnClient.destroy();
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Team information for ${sport}${league ? ` (${league})` : ''}:\n\n${JSON.stringify(data, null, 2)}`
+            }
+          ]
+        };
+      }
+
+      case "get_league_standings": {
+        const { sport, league } = args as any;
+        const espnClient = new ModernESPNClient();
+        const data = await espnClient.getStandings(sport, league);
+        espnClient.destroy();
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Standings for ${sport}${league ? ` (${league})` : ''}:\n\n${JSON.stringify(data, null, 2)}`
+            }
+          ]
+        };
+      }
+
+      case "get_sports_news": {
+        const { sport, limit = 10 } = args as any;
+        const espnClient = new ModernESPNClient();
+        const data = await espnClient.getNews(sport);
+        espnClient.destroy();
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Sports news${sport ? ` for ${sport}` : ''}:\n\n${JSON.stringify(data, null, 2)}`
+            }
+          ]
+        };
+      }
+
+      case "search_athletes": {
+        const { sport, league } = args as any;
+        const espnClient = new ModernESPNClient();
+        const data = await espnClient.getAthletes(sport, league);
+        espnClient.destroy();
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Athletes for ${sport}${league ? ` (${league})` : ''}:\n\n${JSON.stringify(data, null, 2)}`
+            }
+          ]
+        };
+      }
+
+      default:
+        throw new Error(`Unknown tool: ${name}`);
+    }
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error executing ${name}: ${error instanceof Error ? error.message : String(error)}`
+        }
+      ],
+      isError: true
+    };
+  }
+}
+
+async function handleResourceRead(params: any) {
+  const { uri } = params;
+  const espnClient = new ModernESPNClient();
+
+  try {
+    let contents: ResourceContents[];
+
+    switch (uri) {
+      case "espn://live-dashboard": {
+        const [football, basketball, baseball] = await Promise.all([
+          espnClient.getScoreboard("football", "nfl").catch(() => null),
+          espnClient.getScoreboard("basketball", "nba").catch(() => null),
+          espnClient.getScoreboard("baseball", "mlb").catch(() => null)
+        ]);
+        
+        contents = [{
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify({
+            lastUpdated: new Date().toISOString(),
+            football: football,
+            basketball: basketball,
+            baseball: baseball
+          }, null, 2)
+        }];
+        break;
+      }
+
+      case "espn://breaking-news": {
+        const news = await espnClient.getNews();
+        contents = [{
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify(news, null, 2)
+        }];
+        break;
+      }
+
+      case "espn://trending-athletes": {
+        const [footballAthletes, basketballAthletes] = await Promise.all([
+          espnClient.getAthletes("football", "nfl").catch(() => null),
+          espnClient.getAthletes("basketball", "nba").catch(() => null)
+        ]);
+        
+        contents = [{
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify({
+            football: footballAthletes,
+            basketball: basketballAthletes
+          }, null, 2)
+        }];
+        break;
+      }
+
+      case "espn://playoff-picture": {
+        const [nflStandings, nbaStandings] = await Promise.all([
+          espnClient.getStandings("football", "nfl").catch(() => null),
+          espnClient.getStandings("basketball", "nba").catch(() => null)
+        ]);
+        
+        contents = [{
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify({
+            nfl: nflStandings,
+            nba: nbaStandings
+          }, null, 2)
+        }];
+        break;
+      }
+
+      default:
+        throw new Error(`Resource not found: ${uri}`);
+    }
+
+    return { contents };
+  } finally {
+    espnClient.destroy();
+  }
+}
+
+async function handlePromptGet(params: any) {
+  const { name, arguments: args } = params;
+  const prompt = globalPrompts.find((p: Prompt) => p.name === name);
+  
+  if (!prompt) {
+    throw new Error(`Prompt not found: ${name}`);
+  }
+
+  const espnClient = new ModernESPNClient();
+  const messages: PromptMessage[] = [];
+
+  try {
+    switch (name) {
+      case "analyze_game_performance": {
+        const { sport, team_or_player, game_context } = args as any;
+        
+        messages.push({
+          role: "user",
+          content: {
+            type: "text",
+            text: `Analyze the performance of ${team_or_player} in ${sport}${game_context ? ` (${game_context})` : ''}.`
+          } as TextContent
+        });
+
+        const scoreboardData = await espnClient.getScoreboard(sport);
+        messages.push({
+          role: "user",
+          content: {
+            type: "resource",
+            resource: {
+              uri: `espn://analysis/${sport}/${encodeURIComponent(team_or_player)}`,
+              mimeType: "application/json",
+              text: JSON.stringify(scoreboardData, null, 2)
+            }
+          }
+        });
+        break;
+      }
+
+      case "compare_head_to_head": {
+        const { sport, entity1, entity2, comparison_type } = args as any;
+        
+        messages.push({
+          role: "user",
+          content: {
+            type: "text",
+            text: `Compare ${entity1} vs ${entity2} in ${sport}${comparison_type ? ` (${comparison_type} comparison)` : ''}.`
+          } as TextContent
+        });
+
+        const teamsData = await espnClient.getTeams(sport);
+        messages.push({
+          role: "user",
+          content: {
+            type: "resource",
+            resource: {
+              uri: `espn://comparison/${sport}/${encodeURIComponent(entity1)}-vs-${encodeURIComponent(entity2)}`,
+              mimeType: "application/json",
+              text: JSON.stringify(teamsData, null, 2)
+            }
+          }
+        });
+        break;
+      }
+
+      case "predict_season_outcomes": {
+        const { sport, league, prediction_scope } = args as any;
+        
+        messages.push({
+          role: "user",
+          content: {
+            type: "text",
+            text: `Predict season outcomes for ${league} ${sport}${prediction_scope ? ` focusing on ${prediction_scope}` : ''}.`
+          } as TextContent
+        });
+
+        const standingsData = await espnClient.getStandings(sport, league);
+        messages.push({
+          role: "user",
+          content: {
+            type: "resource",
+            resource: {
+              uri: `espn://predictions/${sport}/${league}`,
+              mimeType: "application/json",
+              text: JSON.stringify(standingsData, null, 2)
+            }
+          }
+        });
+        break;
+      }
+
+      default:
+        throw new Error(`Unknown prompt: ${name}`);
+    }
+
+    return {
+      description: prompt.description,
+      messages
+    };
+  } finally {
+    espnClient.destroy();
+  }
+}
+
 // HTTP Server with modern streaming
 export function createHTTPServer(): express.Application {
   const app = express();
   const server = createModernESPNServer();
+
+  // Set global references for HTTP handlers
+  globalTools = tools;
+  globalResources = staticResources;
+  globalPrompts = prompts;
 
   app.use(cors({
     origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
@@ -708,43 +1006,137 @@ export function createHTTPServer(): express.Application {
     next();
   });
 
-  // Main MCP endpoint
+  // Main MCP endpoint with proper JSON-RPC handling
   app.post('/mcp', async (req, res) => {
     try {
       const request = req.body;
       
-      // Simple method routing - bypass the complex server.request approach
+      // Validate JSON-RPC format
+      if (!request.jsonrpc || request.jsonrpc !== "2.0" || !request.method) {
+        return res.status(400).json({
+          jsonrpc: "2.0",
+          error: { code: -32600, message: "Invalid Request" },
+          id: request.id || null
+        });
+      }
+
       let response;
       
-      if (request.method === 'initialize') {
-        response = {
-          jsonrpc: "2.0",
-          result: {
-            protocolVersion: "2024-11-05",
-            capabilities: {
-              resources: { subscribe: true, listChanged: true },
-              prompts: { listChanged: true },
-              tools: { listChanged: true },
-              logging: {},
-              experimental: {
-                httpStreaming: true,
-                sessionManagement: true
+      switch (request.method) {
+        case 'initialize':
+          response = {
+            jsonrpc: "2.0",
+            result: {
+              protocolVersion: "2024-11-05",
+              capabilities: {
+                resources: { subscribe: true, listChanged: true },
+                prompts: { listChanged: true },
+                tools: { listChanged: true },
+                logging: {},
+                experimental: {
+                  httpStreaming: true,
+                  sessionManagement: true
+                }
+              },
+              serverInfo: {
+                name: "modern-espn-server",
+                version: "2.0.0"
               }
             },
-            serverInfo: {
-              name: "modern-espn-server",
-              version: "2.0.0"
-            }
-          },
-          id: request.id
-        };
-      } else {
-        // For other requests, return method not implemented for now
-        response = {
-          jsonrpc: "2.0",
-          error: { code: -32601, message: `Method not implemented: ${request.method}` },
-          id: request.id
-        };
+            id: request.id
+          };
+          break;
+
+        case 'tools/list':
+          response = {
+            jsonrpc: "2.0",
+            result: { tools: globalTools },
+            id: request.id
+          };
+          break;
+
+        case 'tools/call':
+          try {
+            const toolResult = await handleToolCall(request.params);
+            response = {
+              jsonrpc: "2.0",
+              result: toolResult,
+              id: request.id
+            };
+          } catch (error) {
+            response = {
+              jsonrpc: "2.0",
+              error: { 
+                code: -32603, 
+                message: error instanceof Error ? error.message : 'Tool execution failed' 
+              },
+              id: request.id
+            };
+          }
+          break;
+
+        case 'resources/list':
+          response = {
+            jsonrpc: "2.0",
+            result: { resources: globalResources },
+            id: request.id
+          };
+          break;
+
+        case 'resources/read':
+          try {
+            const resourceResult = await handleResourceRead(request.params);
+            response = {
+              jsonrpc: "2.0",
+              result: resourceResult,
+              id: request.id
+            };
+          } catch (error) {
+            response = {
+              jsonrpc: "2.0",
+              error: { 
+                code: -32603, 
+                message: error instanceof Error ? error.message : 'Resource read failed' 
+              },
+              id: request.id
+            };
+          }
+          break;
+
+        case 'prompts/list':
+          response = {
+            jsonrpc: "2.0",
+            result: { prompts: globalPrompts },
+            id: request.id
+          };
+          break;
+
+        case 'prompts/get':
+          try {
+            const promptResult = await handlePromptGet(request.params);
+            response = {
+              jsonrpc: "2.0",
+              result: promptResult,
+              id: request.id
+            };
+          } catch (error) {
+            response = {
+              jsonrpc: "2.0",
+              error: { 
+                code: -32603, 
+                message: error instanceof Error ? error.message : 'Prompt generation failed' 
+              },
+              id: request.id
+            };
+          }
+          break;
+
+        default:
+          response = {
+            jsonrpc: "2.0",
+            error: { code: -32601, message: `Method not found: ${request.method}` },
+            id: request.id
+          };
       }
 
       res.json(response);

@@ -7,13 +7,12 @@ import { createModernESPNServer } from './modern-server.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { ESPNHttpServer } from './http-server.js';
 
-// Configuration schema for Smithery validation
+// Configuration schema for Smithery validation - matches smithery.yaml exactly
 export const configSchema = z.object({
-  cacheTimeout: z.number().min(1000).max(3600000).default(300000), // 5 minutes default
-  maxConcurrentRequests: z.number().min(1).max(100).default(10),
+  cacheTimeout: z.number().min(30000).max(1800000).default(300000),
+  maxConcurrentRequests: z.number().min(1).max(20).default(5),
   enableStreaming: z.boolean().default(true),
   debug: z.boolean().default(false),
-  port: z.number().min(1).max(65535).default(3000),
 });
 
 export type Config = z.infer<typeof configSchema>;

@@ -106,6 +106,205 @@ class ModernESPNClient {
         this.cache.destroy();
     }
 }
+// Tools with modern schemas (defined globally for HTTP handlers)
+const tools = [
+    {
+        name: "get_live_scores",
+        description: "Get live scores and game information for any sport and league",
+        inputSchema: {
+            type: "object",
+            properties: {
+                sport: {
+                    type: "string",
+                    enum: ["football", "basketball", "baseball", "hockey", "soccer", "tennis", "golf"],
+                    description: "The sport to get scores for"
+                },
+                league: {
+                    type: "string",
+                    description: "Specific league (optional)",
+                    enum: ["nfl", "college-football", "nba", "mens-college-basketball", "womens-college-basketball",
+                        "mlb", "nhl", "mls", "premier-league", "champions-league"]
+                }
+            },
+            required: ["sport"]
+        }
+    },
+    {
+        name: "get_team_information",
+        description: "Get comprehensive team information including roster and statistics",
+        inputSchema: {
+            type: "object",
+            properties: {
+                sport: {
+                    type: "string",
+                    enum: ["football", "basketball", "baseball", "hockey", "soccer"],
+                    description: "The sport"
+                },
+                league: {
+                    type: "string",
+                    description: "Specific league (optional)"
+                }
+            },
+            required: ["sport"]
+        }
+    },
+    {
+        name: "get_league_standings",
+        description: "Get current standings and playoff information for any league",
+        inputSchema: {
+            type: "object",
+            properties: {
+                sport: {
+                    type: "string",
+                    enum: ["football", "basketball", "baseball", "hockey", "soccer"],
+                    description: "The sport"
+                },
+                league: {
+                    type: "string",
+                    description: "Specific league (optional)"
+                }
+            },
+            required: ["sport"]
+        }
+    },
+    {
+        name: "get_sports_news",
+        description: "Get latest sports news and breaking stories",
+        inputSchema: {
+            type: "object",
+            properties: {
+                sport: {
+                    type: "string",
+                    description: "Specific sport for news (optional, defaults to general sports)"
+                },
+                limit: {
+                    type: "number",
+                    minimum: 1,
+                    maximum: 50,
+                    default: 10,
+                    description: "Number of articles to return"
+                }
+            }
+        }
+    },
+    {
+        name: "search_athletes",
+        description: "Search for athlete information and career statistics",
+        inputSchema: {
+            type: "object",
+            properties: {
+                sport: {
+                    type: "string",
+                    enum: ["football", "basketball", "baseball", "hockey", "soccer", "tennis", "golf"],
+                    description: "The sport"
+                },
+                league: {
+                    type: "string",
+                    description: "Specific league (optional)"
+                }
+            },
+            required: ["sport"]
+        }
+    }
+];
+// Dynamic resources (defined globally for HTTP handlers)
+const staticResources = [
+    {
+        uri: "espn://live-dashboard",
+        name: "Live Sports Dashboard",
+        description: "Real-time sports scores and updates across all major leagues",
+        mimeType: "application/json"
+    },
+    {
+        uri: "espn://breaking-news",
+        name: "Breaking Sports News",
+        description: "Latest breaking news stories from the sports world",
+        mimeType: "application/json"
+    },
+    {
+        uri: "espn://trending-athletes",
+        name: "Trending Athletes",
+        description: "Currently trending athletes and their recent performances",
+        mimeType: "application/json"
+    },
+    {
+        uri: "espn://playoff-picture",
+        name: "Playoff Picture",
+        description: "Current playoff standings and scenarios across all leagues",
+        mimeType: "application/json"
+    }
+];
+// Interactive prompts (defined globally for HTTP handlers)
+const prompts = [
+    {
+        name: "analyze_game_performance",
+        description: "Analyze team or player performance in a specific game with detailed insights",
+        arguments: [
+            {
+                name: "sport",
+                description: "The sport (e.g., football, basketball, baseball)",
+                required: true
+            },
+            {
+                name: "team_or_player",
+                description: "Team name or player name to analyze",
+                required: true
+            },
+            {
+                name: "game_context",
+                description: "Specific game or recent games context",
+                required: false
+            }
+        ]
+    },
+    {
+        name: "compare_head_to_head",
+        description: "Generate head-to-head comparison between two teams or players",
+        arguments: [
+            {
+                name: "sport",
+                description: "The sport for comparison",
+                required: true
+            },
+            {
+                name: "entity1",
+                description: "First team or player name",
+                required: true
+            },
+            {
+                name: "entity2",
+                description: "Second team or player name",
+                required: true
+            },
+            {
+                name: "comparison_type",
+                description: "Type of comparison (season, career, recent)",
+                required: false
+            }
+        ]
+    },
+    {
+        name: "predict_season_outcomes",
+        description: "Generate predictions and analysis for season outcomes and playoffs",
+        arguments: [
+            {
+                name: "sport",
+                description: "The sport to analyze",
+                required: true
+            },
+            {
+                name: "league",
+                description: "Specific league",
+                required: true
+            },
+            {
+                name: "prediction_scope",
+                description: "Scope of prediction (playoffs, championship, awards)",
+                required: false
+            }
+        ]
+    }
+];
 export function createModernESPNServer() {
     const server = new Server({
         name: "modern-espn-server",
@@ -132,205 +331,6 @@ export function createModernESPNServer() {
     });
     const espnClient = new ModernESPNClient();
     const resourceSubscriptions = new Map();
-    // Tools with modern schemas
-    const tools = [
-        {
-            name: "get_live_scores",
-            description: "Get live scores and game information for any sport and league",
-            inputSchema: {
-                type: "object",
-                properties: {
-                    sport: {
-                        type: "string",
-                        enum: ["football", "basketball", "baseball", "hockey", "soccer", "tennis", "golf"],
-                        description: "The sport to get scores for"
-                    },
-                    league: {
-                        type: "string",
-                        description: "Specific league (optional)",
-                        enum: ["nfl", "college-football", "nba", "mens-college-basketball", "womens-college-basketball",
-                            "mlb", "nhl", "mls", "premier-league", "champions-league"]
-                    }
-                },
-                required: ["sport"]
-            }
-        },
-        {
-            name: "get_team_information",
-            description: "Get comprehensive team information including roster and statistics",
-            inputSchema: {
-                type: "object",
-                properties: {
-                    sport: {
-                        type: "string",
-                        enum: ["football", "basketball", "baseball", "hockey", "soccer"],
-                        description: "The sport"
-                    },
-                    league: {
-                        type: "string",
-                        description: "Specific league (optional)"
-                    }
-                },
-                required: ["sport"]
-            }
-        },
-        {
-            name: "get_league_standings",
-            description: "Get current standings and playoff information for any league",
-            inputSchema: {
-                type: "object",
-                properties: {
-                    sport: {
-                        type: "string",
-                        enum: ["football", "basketball", "baseball", "hockey", "soccer"],
-                        description: "The sport"
-                    },
-                    league: {
-                        type: "string",
-                        description: "Specific league (optional)"
-                    }
-                },
-                required: ["sport"]
-            }
-        },
-        {
-            name: "get_sports_news",
-            description: "Get latest sports news and breaking stories",
-            inputSchema: {
-                type: "object",
-                properties: {
-                    sport: {
-                        type: "string",
-                        description: "Specific sport for news (optional, defaults to general sports)"
-                    },
-                    limit: {
-                        type: "number",
-                        minimum: 1,
-                        maximum: 50,
-                        default: 10,
-                        description: "Number of articles to return"
-                    }
-                }
-            }
-        },
-        {
-            name: "search_athletes",
-            description: "Search for athlete information and career statistics",
-            inputSchema: {
-                type: "object",
-                properties: {
-                    sport: {
-                        type: "string",
-                        enum: ["football", "basketball", "baseball", "hockey", "soccer", "tennis", "golf"],
-                        description: "The sport"
-                    },
-                    league: {
-                        type: "string",
-                        description: "Specific league (optional)"
-                    }
-                },
-                required: ["sport"]
-            }
-        }
-    ];
-    // Dynamic resources
-    const staticResources = [
-        {
-            uri: "espn://live-dashboard",
-            name: "Live Sports Dashboard",
-            description: "Real-time sports scores and updates across all major leagues",
-            mimeType: "application/json"
-        },
-        {
-            uri: "espn://breaking-news",
-            name: "Breaking Sports News",
-            description: "Latest breaking news stories from the sports world",
-            mimeType: "application/json"
-        },
-        {
-            uri: "espn://trending-athletes",
-            name: "Trending Athletes",
-            description: "Currently trending athletes and their recent performances",
-            mimeType: "application/json"
-        },
-        {
-            uri: "espn://playoff-picture",
-            name: "Playoff Picture",
-            description: "Current playoff standings and scenarios across all leagues",
-            mimeType: "application/json"
-        }
-    ];
-    // Interactive prompts
-    const prompts = [
-        {
-            name: "analyze_game_performance",
-            description: "Analyze team or player performance in a specific game with detailed insights",
-            arguments: [
-                {
-                    name: "sport",
-                    description: "The sport (e.g., football, basketball, baseball)",
-                    required: true
-                },
-                {
-                    name: "team_or_player",
-                    description: "Team name or player name to analyze",
-                    required: true
-                },
-                {
-                    name: "game_context",
-                    description: "Specific game or recent games context",
-                    required: false
-                }
-            ]
-        },
-        {
-            name: "compare_head_to_head",
-            description: "Generate head-to-head comparison between two teams or players",
-            arguments: [
-                {
-                    name: "sport",
-                    description: "The sport for comparison",
-                    required: true
-                },
-                {
-                    name: "entity1",
-                    description: "First team or player name",
-                    required: true
-                },
-                {
-                    name: "entity2",
-                    description: "Second team or player name",
-                    required: true
-                },
-                {
-                    name: "comparison_type",
-                    description: "Type of comparison (season, career, recent)",
-                    required: false
-                }
-            ]
-        },
-        {
-            name: "predict_season_outcomes",
-            description: "Generate predictions and analysis for season outcomes and playoffs",
-            arguments: [
-                {
-                    name: "sport",
-                    description: "The sport to analyze",
-                    required: true
-                },
-                {
-                    name: "league",
-                    description: "Specific league",
-                    required: true
-                },
-                {
-                    name: "prediction_scope",
-                    description: "Scope of prediction (playoffs, championship, awards)",
-                    required: false
-                }
-            ]
-        }
-    ];
     // Tool handlers
     server.setRequestHandler(ListToolsRequestSchema, async () => {
         return { tools };
@@ -603,10 +603,272 @@ export function createModernESPNServer() {
     };
     return server;
 }
+// Global references for HTTP handlers
+let globalTools = [];
+let globalResources = [];
+let globalPrompts = [];
+// Helper functions for HTTP endpoint handling
+async function handleToolCall(params) {
+    const { name, arguments: args } = params;
+    try {
+        switch (name) {
+            case "get_live_scores": {
+                const { sport, league } = args;
+                const espnClient = new ModernESPNClient();
+                const data = await espnClient.getScoreboard(sport, league);
+                espnClient.destroy();
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Live scores for ${sport}${league ? ` (${league})` : ''}:\n\n${JSON.stringify(data, null, 2)}`
+                        }
+                    ]
+                };
+            }
+            case "get_team_information": {
+                const { sport, league } = args;
+                const espnClient = new ModernESPNClient();
+                const data = await espnClient.getTeams(sport, league);
+                espnClient.destroy();
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Team information for ${sport}${league ? ` (${league})` : ''}:\n\n${JSON.stringify(data, null, 2)}`
+                        }
+                    ]
+                };
+            }
+            case "get_league_standings": {
+                const { sport, league } = args;
+                const espnClient = new ModernESPNClient();
+                const data = await espnClient.getStandings(sport, league);
+                espnClient.destroy();
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Standings for ${sport}${league ? ` (${league})` : ''}:\n\n${JSON.stringify(data, null, 2)}`
+                        }
+                    ]
+                };
+            }
+            case "get_sports_news": {
+                const { sport, limit = 10 } = args;
+                const espnClient = new ModernESPNClient();
+                const data = await espnClient.getNews(sport);
+                espnClient.destroy();
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Sports news${sport ? ` for ${sport}` : ''}:\n\n${JSON.stringify(data, null, 2)}`
+                        }
+                    ]
+                };
+            }
+            case "search_athletes": {
+                const { sport, league } = args;
+                const espnClient = new ModernESPNClient();
+                const data = await espnClient.getAthletes(sport, league);
+                espnClient.destroy();
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Athletes for ${sport}${league ? ` (${league})` : ''}:\n\n${JSON.stringify(data, null, 2)}`
+                        }
+                    ]
+                };
+            }
+            default:
+                throw new Error(`Unknown tool: ${name}`);
+        }
+    }
+    catch (error) {
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `Error executing ${name}: ${error instanceof Error ? error.message : String(error)}`
+                }
+            ],
+            isError: true
+        };
+    }
+}
+async function handleResourceRead(params) {
+    const { uri } = params;
+    const espnClient = new ModernESPNClient();
+    try {
+        let contents;
+        switch (uri) {
+            case "espn://live-dashboard": {
+                const [football, basketball, baseball] = await Promise.all([
+                    espnClient.getScoreboard("football", "nfl").catch(() => null),
+                    espnClient.getScoreboard("basketball", "nba").catch(() => null),
+                    espnClient.getScoreboard("baseball", "mlb").catch(() => null)
+                ]);
+                contents = [{
+                        uri,
+                        mimeType: "application/json",
+                        text: JSON.stringify({
+                            lastUpdated: new Date().toISOString(),
+                            football: football,
+                            basketball: basketball,
+                            baseball: baseball
+                        }, null, 2)
+                    }];
+                break;
+            }
+            case "espn://breaking-news": {
+                const news = await espnClient.getNews();
+                contents = [{
+                        uri,
+                        mimeType: "application/json",
+                        text: JSON.stringify(news, null, 2)
+                    }];
+                break;
+            }
+            case "espn://trending-athletes": {
+                const [footballAthletes, basketballAthletes] = await Promise.all([
+                    espnClient.getAthletes("football", "nfl").catch(() => null),
+                    espnClient.getAthletes("basketball", "nba").catch(() => null)
+                ]);
+                contents = [{
+                        uri,
+                        mimeType: "application/json",
+                        text: JSON.stringify({
+                            football: footballAthletes,
+                            basketball: basketballAthletes
+                        }, null, 2)
+                    }];
+                break;
+            }
+            case "espn://playoff-picture": {
+                const [nflStandings, nbaStandings] = await Promise.all([
+                    espnClient.getStandings("football", "nfl").catch(() => null),
+                    espnClient.getStandings("basketball", "nba").catch(() => null)
+                ]);
+                contents = [{
+                        uri,
+                        mimeType: "application/json",
+                        text: JSON.stringify({
+                            nfl: nflStandings,
+                            nba: nbaStandings
+                        }, null, 2)
+                    }];
+                break;
+            }
+            default:
+                throw new Error(`Resource not found: ${uri}`);
+        }
+        return { contents };
+    }
+    finally {
+        espnClient.destroy();
+    }
+}
+async function handlePromptGet(params) {
+    const { name, arguments: args } = params;
+    const prompt = globalPrompts.find((p) => p.name === name);
+    if (!prompt) {
+        throw new Error(`Prompt not found: ${name}`);
+    }
+    const espnClient = new ModernESPNClient();
+    const messages = [];
+    try {
+        switch (name) {
+            case "analyze_game_performance": {
+                const { sport, team_or_player, game_context } = args;
+                messages.push({
+                    role: "user",
+                    content: {
+                        type: "text",
+                        text: `Analyze the performance of ${team_or_player} in ${sport}${game_context ? ` (${game_context})` : ''}.`
+                    }
+                });
+                const scoreboardData = await espnClient.getScoreboard(sport);
+                messages.push({
+                    role: "user",
+                    content: {
+                        type: "resource",
+                        resource: {
+                            uri: `espn://analysis/${sport}/${encodeURIComponent(team_or_player)}`,
+                            mimeType: "application/json",
+                            text: JSON.stringify(scoreboardData, null, 2)
+                        }
+                    }
+                });
+                break;
+            }
+            case "compare_head_to_head": {
+                const { sport, entity1, entity2, comparison_type } = args;
+                messages.push({
+                    role: "user",
+                    content: {
+                        type: "text",
+                        text: `Compare ${entity1} vs ${entity2} in ${sport}${comparison_type ? ` (${comparison_type} comparison)` : ''}.`
+                    }
+                });
+                const teamsData = await espnClient.getTeams(sport);
+                messages.push({
+                    role: "user",
+                    content: {
+                        type: "resource",
+                        resource: {
+                            uri: `espn://comparison/${sport}/${encodeURIComponent(entity1)}-vs-${encodeURIComponent(entity2)}`,
+                            mimeType: "application/json",
+                            text: JSON.stringify(teamsData, null, 2)
+                        }
+                    }
+                });
+                break;
+            }
+            case "predict_season_outcomes": {
+                const { sport, league, prediction_scope } = args;
+                messages.push({
+                    role: "user",
+                    content: {
+                        type: "text",
+                        text: `Predict season outcomes for ${league} ${sport}${prediction_scope ? ` focusing on ${prediction_scope}` : ''}.`
+                    }
+                });
+                const standingsData = await espnClient.getStandings(sport, league);
+                messages.push({
+                    role: "user",
+                    content: {
+                        type: "resource",
+                        resource: {
+                            uri: `espn://predictions/${sport}/${league}`,
+                            mimeType: "application/json",
+                            text: JSON.stringify(standingsData, null, 2)
+                        }
+                    }
+                });
+                break;
+            }
+            default:
+                throw new Error(`Unknown prompt: ${name}`);
+        }
+        return {
+            description: prompt.description,
+            messages
+        };
+    }
+    finally {
+        espnClient.destroy();
+    }
+}
 // HTTP Server with modern streaming
 export function createHTTPServer() {
     const app = express();
     const server = createModernESPNServer();
+    // Set global references for HTTP handlers
+    globalTools = tools;
+    globalResources = staticResources;
+    globalPrompts = prompts;
     app.use(cors({
         origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
         credentials: true
@@ -620,42 +882,130 @@ export function createHTTPServer() {
         }
         next();
     });
-    // Main MCP endpoint
+    // Main MCP endpoint with proper JSON-RPC handling
     app.post('/mcp', async (req, res) => {
         try {
             const request = req.body;
-            // Simple method routing - bypass the complex server.request approach
-            let response;
-            if (request.method === 'initialize') {
-                response = {
+            // Validate JSON-RPC format
+            if (!request.jsonrpc || request.jsonrpc !== "2.0" || !request.method) {
+                return res.status(400).json({
                     jsonrpc: "2.0",
-                    result: {
-                        protocolVersion: "2024-11-05",
-                        capabilities: {
-                            resources: { subscribe: true, listChanged: true },
-                            prompts: { listChanged: true },
-                            tools: { listChanged: true },
-                            logging: {},
-                            experimental: {
-                                httpStreaming: true,
-                                sessionManagement: true
+                    error: { code: -32600, message: "Invalid Request" },
+                    id: request.id || null
+                });
+            }
+            let response;
+            switch (request.method) {
+                case 'initialize':
+                    response = {
+                        jsonrpc: "2.0",
+                        result: {
+                            protocolVersion: "2024-11-05",
+                            capabilities: {
+                                resources: { subscribe: true, listChanged: true },
+                                prompts: { listChanged: true },
+                                tools: { listChanged: true },
+                                logging: {},
+                                experimental: {
+                                    httpStreaming: true,
+                                    sessionManagement: true
+                                }
+                            },
+                            serverInfo: {
+                                name: "modern-espn-server",
+                                version: "2.0.0"
                             }
                         },
-                        serverInfo: {
-                            name: "modern-espn-server",
-                            version: "2.0.0"
-                        }
-                    },
-                    id: request.id
-                };
-            }
-            else {
-                // For other requests, return method not implemented for now
-                response = {
-                    jsonrpc: "2.0",
-                    error: { code: -32601, message: `Method not implemented: ${request.method}` },
-                    id: request.id
-                };
+                        id: request.id
+                    };
+                    break;
+                case 'tools/list':
+                    response = {
+                        jsonrpc: "2.0",
+                        result: { tools: globalTools },
+                        id: request.id
+                    };
+                    break;
+                case 'tools/call':
+                    try {
+                        const toolResult = await handleToolCall(request.params);
+                        response = {
+                            jsonrpc: "2.0",
+                            result: toolResult,
+                            id: request.id
+                        };
+                    }
+                    catch (error) {
+                        response = {
+                            jsonrpc: "2.0",
+                            error: {
+                                code: -32603,
+                                message: error instanceof Error ? error.message : 'Tool execution failed'
+                            },
+                            id: request.id
+                        };
+                    }
+                    break;
+                case 'resources/list':
+                    response = {
+                        jsonrpc: "2.0",
+                        result: { resources: globalResources },
+                        id: request.id
+                    };
+                    break;
+                case 'resources/read':
+                    try {
+                        const resourceResult = await handleResourceRead(request.params);
+                        response = {
+                            jsonrpc: "2.0",
+                            result: resourceResult,
+                            id: request.id
+                        };
+                    }
+                    catch (error) {
+                        response = {
+                            jsonrpc: "2.0",
+                            error: {
+                                code: -32603,
+                                message: error instanceof Error ? error.message : 'Resource read failed'
+                            },
+                            id: request.id
+                        };
+                    }
+                    break;
+                case 'prompts/list':
+                    response = {
+                        jsonrpc: "2.0",
+                        result: { prompts: globalPrompts },
+                        id: request.id
+                    };
+                    break;
+                case 'prompts/get':
+                    try {
+                        const promptResult = await handlePromptGet(request.params);
+                        response = {
+                            jsonrpc: "2.0",
+                            result: promptResult,
+                            id: request.id
+                        };
+                    }
+                    catch (error) {
+                        response = {
+                            jsonrpc: "2.0",
+                            error: {
+                                code: -32603,
+                                message: error instanceof Error ? error.message : 'Prompt generation failed'
+                            },
+                            id: request.id
+                        };
+                    }
+                    break;
+                default:
+                    response = {
+                        jsonrpc: "2.0",
+                        error: { code: -32601, message: `Method not found: ${request.method}` },
+                        id: request.id
+                    };
             }
             res.json(response);
         }
