@@ -815,3 +815,7 @@ export function createStdioServer({ config } = {}) {
     };
     return server;
 }
+// Auto-start for Smithery deployment
+if (process.env.NODE_ENV === 'production' || process.env.SMITHERY_RUNTIME) {
+    createESPNMCPServer();
+}
