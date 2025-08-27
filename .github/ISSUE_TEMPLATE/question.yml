@@ -1,0 +1,137 @@
+name: ❓ Question / Help
+description: Ask a question or get help with using the ESPN MCP Server
+title: "[QUESTION] "
+labels: ["question", "help-wanted"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Need help with the ESPN MCP Server? Please provide details below and we'll try to assist you!
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What would you like to know or what are you trying to accomplish?
+      placeholder: I'm trying to...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Question Category
+      description: What type of help do you need?
+      options:
+        - Setup/Installation
+        - Configuration
+        - Tool Usage
+        - API Integration
+        - Deployment (Docker/Kubernetes)
+        - Troubleshooting
+        - Best Practices
+        - ESPN API Endpoints
+        - MCP Client Integration
+        - Performance
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: sport
+    attributes:
+      label: Related Sport/League (if applicable)
+      description: Is your question specific to a particular sport or league?
+      options:
+        - NFL
+        - College Football
+        - NBA
+        - WNBA
+        - Men's College Basketball
+        - Women's College Basketball
+        - MLB
+        - College Baseball
+        - NHL
+        - MLS
+        - Premier League
+        - Champions League
+        - Multiple sports
+        - N/A
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context & What You've Tried
+      description: |
+        Provide context about what you're trying to achieve and what you've already attempted.
+        Include any relevant code snippets, configurations, or error messages.
+      placeholder: |
+        I'm trying to...
+        I've already tried...
+        
+        ```typescript
+        // Code example (if applicable)
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: |
+        Please provide details about your environment:
+        - OS (Windows, macOS, Linux)
+        - Node.js version
+        - Package version
+        - Transport mode (STDIO, HTTP)
+        - MCP client (Claude Desktop, custom, etc.)
+      placeholder: |
+        OS: Windows 11
+        Node.js: v20.10.0
+        Package: v2.0.0
+        Transport: HTTP
+        Client: Claude Desktop
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Outcome
+      description: What result are you hoping to achieve?
+      placeholder: I expect to...
+    validations:
+      required: false
+
+  - type: textarea
+    id: documentation
+    attributes:
+      label: Documentation Reviewed
+      description: |
+        Which parts of the documentation have you already reviewed?
+        (This helps us understand where to improve our docs)
+      placeholder: |
+        - README.md
+        - Tool documentation
+        - Examples section
+        - etc.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Please confirm the following:
+      options:
+        - label: I have searched existing issues and discussions for similar questions
+          required: true
+        - label: I have reviewed the README and documentation
+          required: true
+        - label: I have provided sufficient context for others to understand my question
+          required: true

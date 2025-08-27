@@ -1,0 +1,148 @@
+name: 🐛 Bug Report
+description: Report a bug or issue with the ESPN MCP Server
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the sections below to help us understand and fix the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the bug...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Call tool '...'
+        2. Use parameters '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+      placeholder: Expected behavior...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: A clear and concise description of what actually happened.
+      placeholder: Actual behavior...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tool
+    attributes:
+      label: Affected Tool
+      description: Which MCP tool is experiencing the issue?
+      options:
+        - get_live_scores
+        - get_team_information
+        - get_specific_team
+        - get_college_football_rankings
+        - get_game_summary
+        - get_league_standings
+        - get_sports_news
+        - search_athletes
+        - Multiple tools
+        - Server/Transport issue
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: sport
+    attributes:
+      label: Sport/League
+      description: Which sport or league is affected?
+      options:
+        - NFL
+        - College Football
+        - NBA
+        - WNBA
+        - Men's College Basketball
+        - Women's College Basketball
+        - MLB
+        - College Baseball
+        - NHL
+        - MLS
+        - Premier League
+        - Champions League
+        - Multiple sports
+        - N/A
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        Please provide details about your environment:
+        - OS (Windows, macOS, Linux)
+        - Node.js version
+        - Package version
+        - Transport mode (STDIO, HTTP)
+        - MCP client (Claude Desktop, custom, etc.)
+      placeholder: |
+        OS: Windows 11
+        Node.js: v20.10.0
+        Package: v2.0.0
+        Transport: HTTP
+        Client: Claude Desktop
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs
+      description: |
+        Include any relevant error messages or logs. Please format them using code blocks.
+        Remove any sensitive information.
+      placeholder: |
+        ```
+        Error message or logs here
+        ```
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here (screenshots, related issues, etc.)
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Please confirm the following:
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have provided all relevant information requested above
+          required: true
+        - label: I am using the latest version of the ESPN MCP Server
+          required: false

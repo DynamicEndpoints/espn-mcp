@@ -1,0 +1,140 @@
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement for the ESPN MCP Server
+title: "[FEATURE] "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide details below to help us understand your request.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem? Please describe the use case.
+      placeholder: I'm always frustrated when...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see implemented.
+      placeholder: I would like to see...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      description: What type of feature is this?
+      options:
+        - New MCP Tool
+        - Enhanced Existing Tool
+        - New Sport/League Support
+        - API Endpoint Enhancement
+        - Performance Improvement
+        - Documentation
+        - Development/Testing
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: sport
+    attributes:
+      label: Related Sport/League
+      description: Is this feature specific to a particular sport or league?
+      options:
+        - NFL
+        - College Football
+        - NBA
+        - WNBA
+        - Men's College Basketball
+        - Women's College Basketball
+        - MLB
+        - College Baseball
+        - NHL
+        - MLS
+        - Premier League
+        - Champions League
+        - Tennis
+        - Golf
+        - All Sports
+        - N/A
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Describe any alternative solutions or features you've considered.
+      placeholder: Alternatively, we could...
+    validations:
+      required: false
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Usage Examples
+      description: |
+        Provide examples of how this feature would be used. Include code snippets if applicable.
+      placeholder: |
+        ```typescript
+        // Example usage
+        const result = await callTool("new_tool", {
+          parameter: "value"
+        });
+        ```
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority Level
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would improve workflow
+        - High - Critical for my use case
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact Assessment
+      description: |
+        Who would benefit from this feature? How would it improve the ESPN MCP Server?
+      placeholder: This feature would help users who...
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: |
+        Add any other context, mockups, or screenshots about the feature request here.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Please confirm the following:
+      options:
+        - label: I have searched existing issues to ensure this feature hasn't been requested
+          required: true
+        - label: I have provided clear use cases for this feature
+          required: true
+        - label: I understand this is a community project and implementation depends on available resources
+          required: true

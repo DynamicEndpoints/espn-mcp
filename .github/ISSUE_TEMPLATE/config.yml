@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentation
+    url: https://github.com/DynamicEndpoints/espn-mcp/blob/main/README.md
+    about: Check the comprehensive README for usage examples and API documentation
+  - name: 💬 Discussions
+    url: https://github.com/DynamicEndpoints/espn-mcp/discussions
+    about: General questions, ideas, and community discussions
+  - name: 🔧 ESPN API Documentation
+    url: https://site.api.espn.com/apis/site/v2/sports
+    about: Official ESPN API endpoints and data structure reference

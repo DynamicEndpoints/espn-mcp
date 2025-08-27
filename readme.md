@@ -3,40 +3,40 @@
 [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/DynamicEndpoints/espn-mcp)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3.2-blue.svg)](https://www.typescriptlang.org/)
-[![MCP SDK](https://img.shields.io/badge/MCP%20SDK-0.6.0-purple.svg)](https://github.com/modelcontextprotocol/typescript-sdk)
+[![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.17.4-purple.svg)](https://github.com/modelcontextprotocol/typescript-sdk)
 
-A modern, feature-rich **Model Context Protocol (MCP) server** that provides comprehensive access to ESPN sports data. Built with the latest 2025 MCP specification supporting **resources, prompts, tools, HTTP streaming, and session management**.
+A modern, production-ready **Model Context Protocol (MCP) server** that provides comprehensive access to ESPN's hidden sports APIs. Built with enhanced tool handlers, advanced parameter support, and complete coverage of all major sports leagues.
 
 ## 🚀 Features
 
 ### Core Capabilities
-- **Real-time Sports Data** - Live scores, standings, news, and statistics
-- **Multi-Transport Support** - STDIO, HTTP, and streaming endpoints
-- **Modern MCP 2025 Specification** - Full support for latest features
-- **Advanced Caching** - Intelligent caching with TTL and automatic cleanup
-- **Resource Subscriptions** - Real-time updates and notifications
-- **Interactive Prompts** - AI-powered sports analysis and predictions
-- **HTTP Streaming** - Server-Sent Events (SSE) for live updates
-- **Session Management** - Stateful connections and user sessions
+- **20+ Specific ESPN Endpoints** - Direct access to ESPN's hidden API endpoints
+- **Advanced Parameter Support** - Date filtering, week numbers, season types, team IDs
+- **Multi-Transport Support** - STDIO and HTTP streaming with MCP compliance
+- **Comprehensive Sports Coverage** - NFL, NBA, MLB, NHL, College Sports, Soccer
+- **Smart Routing** - Automatic endpoint selection based on sport/league combinations
+- **Enhanced Tool Schemas** - Rich parameter validation and documentation
 
 ### Sports Coverage
-- **🏈 NFL** - National Football League
-- **🏀 NBA** - National Basketball Association  
+- **🏈 NFL** - National Football League (with week/season type filtering)
+- **� College Football** - Division I (with rankings and game summaries)
+- **�🏀 NBA** - National Basketball Association
+- **🏀 WNBA** - Women's National Basketball Association
+- **🏀 College Basketball** - Men's and Women's NCAA
 - **⚾ MLB** - Major League Baseball
-- **🏒 NHL** - National Hockey League
-- **⚽ Soccer** - MLS, Premier League, Champions League
-- **🏀 College Basketball** - Men's and Women's
-- **🏈 College Football** - Division I
-- **🎾 Tennis** - Professional tours
-- **⛳ Golf** - Major tournaments
+- **⚾ College Baseball** - NCAA Division I
+- **� NHL** - National Hockey League
+- **⚽ MLS** - Major League Soccer
+- **⚽ Premier League** - English Premier League
+- **⚽ Champions League** - UEFA Champions League
 
-### Data Types
-- **Live Scores & Game Status** - Real-time game updates
-- **Team Information** - Rosters, statistics, and performance metrics
-- **Player Statistics** - Career stats, season performance, and trends
-- **League Standings** - Current rankings and playoff pictures
-- **Breaking News** - Latest sports news and updates
-- **Historical Data** - Past seasons and career records
+### Enhanced Data Access
+- **Live Scores with Filtering** - Date-specific scores (YYYYMMDD format)
+- **Team-Specific Data** - Individual team information by abbreviation
+- **Game Summaries** - Detailed game breakdowns and statistics
+- **College Football Rankings** - Current AP and Coaches polls
+- **Multi-League News** - Sport-specific news aggregation
+- **Historical Data** - Season and career statistics
 
 ## 📋 Prerequisites
 
@@ -116,49 +116,98 @@ node build/modern-server.js --http --port 3000
 
 ## 🔧 Available Tools
 
-### Core Sports Tools
+### Enhanced Sports Tools
 
-#### Live Scores
+#### 🏆 Live Scores with Advanced Filtering
 ```typescript
-// Get live scores for any sport
 get_live_scores({
-  sport: "football" | "basketball" | "baseball" | "hockey" | "soccer" | "tennis" | "golf",
-  league?: "nfl" | "college-football" | "nba" | "mens-college-basketball" | "mlb" | "nhl" | "mls"
+  sport: "football" | "basketball" | "baseball" | "hockey" | "soccer",
+  league?: "nfl" | "college-football" | "nba" | "mens-college-basketball" | 
+           "womens-college-basketball" | "wnba" | "mlb" | "college-baseball" | 
+           "nhl" | "mls" | "premier-league" | "champions-league",
+  dates?: string,      // YYYYMMDD format (e.g., "20250826")
+  week?: string,       // NFL week number (e.g., "1", "17")
+  seasontype?: "1" | "2" | "3"  // 1=preseason, 2=regular, 3=postseason
 })
+
+// Examples:
+// NFL Week 1 regular season: { sport: "football", league: "nfl", week: "1", seasontype: "2" }
+// NBA games on specific date: { sport: "basketball", league: "nba", dates: "20250826" }
+// College football scores: { sport: "football", league: "college-football" }
 ```
 
-#### Team Information
+#### 🏟️ Team Information
 ```typescript
-// Get comprehensive team data
 get_team_information({
   sport: "football" | "basketball" | "baseball" | "hockey" | "soccer",
-  league?: string
+  league?: "nfl" | "college-football" | "nba" | "mens-college-basketball" |
+           "womens-college-basketball" | "wnba" | "mlb" | "college-baseball" | "nhl"
 })
+
+// Examples:
+// All NFL teams: { sport: "football", league: "nfl" }
+// College basketball teams: { sport: "basketball", league: "mens-college-basketball" }
 ```
 
-#### League Standings
+#### 🎯 Specific Team Details
 ```typescript
-// Get current standings and playoff information
+get_specific_team({
+  sport: "football" | "basketball" | "baseball" | "hockey" | "soccer",
+  league: "nfl" | "college-football" | "nba" | "mens-college-basketball" |
+          "womens-college-basketball" | "wnba" | "mlb" | "nhl",
+  team: string  // Team abbreviation or identifier
+})
+
+// Examples:
+// New England Patriots: { sport: "football", league: "nfl", team: "patriots" }
+// Georgia Tech: { sport: "football", league: "college-football", team: "gt" }
+// Los Angeles Lakers: { sport: "basketball", league: "nba", team: "lakers" }
+```
+
+#### 🏆 College Football Rankings
+```typescript
+get_college_football_rankings({})
+
+// Returns current AP Poll, Coaches Poll, and CFP rankings
+```
+
+#### 📊 Game Summary
+```typescript
+get_game_summary({
+  sport: "football",        // Currently football only
+  league: "college-football", // Currently college-football only
+  gameId: string           // ESPN game identifier
+})
+
+// Example:
+// 2017 Army vs Navy: { sport: "football", league: "college-football", gameId: "400934572" }
+```
+
+#### 📈 League Standings
+```typescript
 get_league_standings({
   sport: "football" | "basketball" | "baseball" | "hockey" | "soccer",
   league?: string
 })
 ```
 
-#### Sports News
+#### 📰 Sports News with Multi-League Support
 ```typescript
-// Get latest sports news
 get_sports_news({
-  sport?: string,  // Optional: filter by sport
-  limit?: number   // Default: 10, Max: 50
+  sport?: "football" | "basketball" | "baseball" | "hockey",
+  limit?: number  // Default: 10, Max: 50
 })
+
+// Examples:
+// All football news (NFL + College): { sport: "football" }
+// Basketball news (NBA + WNBA + College): { sport: "basketball", limit: 20 }
+// General sports news: {} (no parameters)
 ```
 
-#### Athlete Search
+#### 🔍 Athlete Search
 ```typescript
-// Search for athlete information
 search_athletes({
-  sport: "football" | "basketball" | "baseball" | "hockey" | "soccer" | "tennis" | "golf",
+  sport: "football" | "basketball" | "baseball" | "hockey" | "soccer",
   league?: string
 })
 ```
@@ -270,26 +319,106 @@ For Claude Desktop or other MCP clients:
 - **Connection Pooling** - Optimized HTTP client configuration
 - **Memory Management** - Automatic cleanup and garbage collection
 
-## 📚 API Examples
+## 📚 Enhanced API Examples
 
-### Basic Usage
+### Advanced Live Scores
 ```javascript
-// Get live NFL scores
-const scores = await callTool("get_live_scores", {
+// Get NFL Week 5 regular season scores
+const nflScores = await callTool("get_live_scores", {
   sport: "football",
-  league: "nfl"
+  league: "nfl",
+  week: "5",
+  seasontype: "2"  // Regular season
 });
 
-// Get NBA team information
-const teams = await callTool("get_team_information", {
-  sport: "basketball", 
-  league: "nba"
+// Get NBA games for a specific date
+const nbaScores = await callTool("get_live_scores", {
+  sport: "basketball",
+  league: "nba",
+  dates: "20250826"
 });
 
-// Get latest sports news
-const news = await callTool("get_sports_news", {
+// Get College Football scores
+const cfbScores = await callTool("get_live_scores", {
   sport: "football",
-  limit: 5
+  league: "college-football"
+});
+```
+
+### Team-Specific Data
+```javascript
+// Get detailed info about the New England Patriots
+const patriotsInfo = await callTool("get_specific_team", {
+  sport: "football",
+  league: "nfl",
+  team: "patriots"
+});
+
+// Get Georgia Tech football team details
+const gtInfo = await callTool("get_specific_team", {
+  sport: "football",
+  league: "college-football",
+  team: "gt"
+});
+
+// Get Los Angeles Lakers information
+const lakersInfo = await callTool("get_specific_team", {
+  sport: "basketball",
+  league: "nba",
+  team: "lakers"
+});
+```
+
+### College Football Enhancements
+```javascript
+// Get current college football rankings
+const rankings = await callTool("get_college_football_rankings", {});
+
+// Get detailed game summary (2017 Army vs Navy example)
+const gameSummary = await callTool("get_game_summary", {
+  sport: "football",
+  league: "college-football",
+  gameId: "400934572"
+});
+```
+
+### Multi-League News
+```javascript
+// Get comprehensive football news (NFL + College)
+const footballNews = await callTool("get_sports_news", {
+  sport: "football",
+  limit: 15
+});
+
+// Get basketball news from all leagues (NBA, WNBA, College)
+const basketballNews = await callTool("get_sports_news", {
+  sport: "basketball"
+});
+
+// Get general sports news
+const allNews = await callTool("get_sports_news", {
+  limit: 20
+});
+```
+
+### Soccer Leagues
+```javascript
+// Get MLS scores
+const mlsScores = await callTool("get_live_scores", {
+  sport: "soccer",
+  league: "mls"
+});
+
+// Get Premier League scores
+const plScores = await callTool("get_live_scores", {
+  sport: "soccer",
+  league: "premier-league"
+});
+
+// Get Champions League scores
+const clScores = await callTool("get_live_scores", {
+  sport: "soccer",
+  league: "champions-league"
 });
 ```
 

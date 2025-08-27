@@ -287,8 +287,28 @@ class ModernESPNClient {
   }
 
   async getStandings(sport: string, league?: string): Promise<any> {
-    const leagueParam = league ? `/${league}` : '';
-    return this.fetchData(`/${sport}${leagueParam}/standings`);
+    try {
+      const leagueParam = league ? `/${league}` : '';
+      const standingsData = await this.fetchData(`/${sport}${leagueParam}/standings`);
+      
+      // Check if we got minimal response (just a link)
+      if (standingsData?.fullViewLink && !standingsData.standings) {
+        // Return informative response about the limitation
+        return {
+          message: "ESPN API provides limited standings data via this endpoint",
+          fullViewLink: standingsData.fullViewLink,
+          recommendation: "Use the fullViewLink to access complete standings on ESPN's website",
+          sport: sport,
+          league: league,
+          alternativeEndpoint: `/${sport}${leagueParam}/teams can provide team information`
+        };
+      }
+      
+      return standingsData;
+    } catch (error) {
+      console.error('Error fetching standings:', error);
+      throw new Error(`Failed to fetch standings: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   async getNews(sport?: string): Promise<any> {
@@ -297,8 +317,50 @@ class ModernESPNClient {
   }
 
   async getAthletes(sport: string, league?: string): Promise<any> {
-    const leagueParam = league ? `/${league}` : '';
-    return this.fetchData(`/${sport}${leagueParam}/athletes`);
+    try {
+      // Get all teams first
+      const leagueParam = league ? `/${league}` : '';
+      const teamsData = await this.fetchData(`/${sport}${leagueParam}/teams`);
+      
+      if (!teamsData?.sports?.[0]?.leagues?.[0]?.teams) {
+        throw new Error('No teams found');
+      }
+      
+      const teams = teamsData.sports[0].leagues[0].teams;
+      const allAthletes: any[] = [];
+      
+      // Get roster for each team
+      for (const team of teams) {
+        try {
+          const rosterData = await this.fetchData(`/${sport}${leagueParam}/teams/${team.id}/roster`);
+          if (rosterData?.athletes) {
+            // Add team info to each athlete
+            const athletesWithTeam = rosterData.athletes.map((athlete: any) => ({
+              ...athlete,
+              team: {
+                id: team.id,
+                name: team.displayName,
+                abbreviation: team.abbreviation
+              }
+            }));
+            allAthletes.push(...athletesWithTeam);
+          }
+        } catch (teamError) {
+          // Continue if individual team roster fails
+          console.warn(`Failed to fetch roster for team ${team.id}:`, teamError);
+        }
+      }
+      
+      return {
+        athletes: allAthletes,
+        count: allAthletes.length,
+        sport: sport,
+        league: league
+      };
+    } catch (error) {
+      console.error('Error fetching athletes:', error);
+      throw new Error(`Failed to fetch athletes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   onResourceUpdate(callback: (key: string, data: any) => void) {
