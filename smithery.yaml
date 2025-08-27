@@ -1,4 +1,7 @@
-runtime: "typescript"
+runtime: "container"
+build:
+  dockerfile: "Dockerfile"
+  dockerBuildPath: "."
 env:
   NODE_ENV: "production"
   ESPN_API_BASE_URL: "https://site.api.espn.com/apis/site/v2/sports"

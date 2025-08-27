@@ -1,4 +1,3 @@
-# ESPN MCP Server - Containerized
 FROM node:20-alpine
 
 WORKDIR /app
@@ -7,8 +6,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install all dependencies (need dev deps for TypeScript compilation)
+RUN npm ci
 
 # Copy source code
 COPY src/ ./src/
@@ -24,17 +23,20 @@ RUN addgroup -g 1001 -S espn && \
 RUN chown -R espn:espn /app
 USER espn
 
+# Set transport mode to HTTP
+ENV TRANSPORT=http
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "process.exit(0)"
 
-# Expose port for HTTP transport (if needed)
-EXPOSE 3000
+# Expose port for HTTP transport (Smithery requires 8081)
+EXPOSE 8081
 
-# Default command - use modern server for best practices compliance
+# Default command - use modern server in HTTP mode
 CMD ["node", "build/modern-server.js"]
 
 # Labels for better container management
 LABEL maintainer="ESPN MCP Team"
 LABEL version="2.0.0"
-LABEL description="ESPN MCP Server with Lazy Loading"
+LABEL description="ESPN MCP Server with HTTP Transport"

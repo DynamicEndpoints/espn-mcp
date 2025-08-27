@@ -5,6 +5,7 @@
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
   CallToolRequestSchema,
   ListResourcesRequestSchema,
@@ -22,6 +23,29 @@ import {
 import express from "express";
 import cors from "cors";
 import { EventEmitter } from "events";
+import { z } from "zod";
+
+// Configuration schema for HTTP deployment
+export const configSchema = z.object({
+  cacheTimeout: z.number().optional().default(300000).describe("Cache timeout in milliseconds"),
+  maxConcurrentRequests: z.number().optional().default(5).describe("Maximum number of concurrent ESPN API requests"),
+  enableStreaming: z.boolean().optional().default(true).describe("Enable Server-Side Events for real-time updates"),
+  debug: z.boolean().optional().default(false).describe("Enable debug logging"),
+});
+
+// Parse configuration from query parameters (for HTTP deployment)
+function parseConfig(req: express.Request) {
+  const configParam = req.query.config as string;
+  if (configParam) {
+    try {
+      return JSON.parse(Buffer.from(configParam, 'base64').toString());
+    } catch (e) {
+      console.warn('Failed to parse config parameter:', e);
+      return {};
+    }
+  }
+  return {};
+}
 
 // Modern cache implementation
 class ModernCache extends EventEmitter {
@@ -73,8 +97,8 @@ class ModernESPNClient {
   private cache: ModernCache;
   private baseUrl = "https://site.api.espn.com/apis/site/v2/sports";
 
-  constructor() {
-    this.cache = new ModernCache(300000); // 5 minutes
+  constructor(cacheTimeout = 300000) {
+    this.cache = new ModernCache(cacheTimeout);
   }
 
   async fetchData(endpoint: string): Promise<any> {
@@ -345,7 +369,9 @@ const prompts: Prompt[] = [
     }
 ];
 
-export function createModernESPNServer(): Server {
+export function createModernESPNServer(config: Partial<z.infer<typeof configSchema>> = {}): Server {
+  const finalConfig = configSchema.parse(config);
+  
   const server = new Server(
     {
       name: "modern-espn-server",
@@ -365,7 +391,7 @@ export function createModernESPNServer(): Server {
         },
         logging: {},
         experimental: {
-          httpStreaming: true,
+          httpStreaming: finalConfig.enableStreaming,
           sessionManagement: true,
           resourceTemplates: true
         }
@@ -373,8 +399,12 @@ export function createModernESPNServer(): Server {
     }
   );
 
-  const espnClient = new ModernESPNClient();
+  const espnClient = new ModernESPNClient(finalConfig.cacheTimeout);
   const resourceSubscriptions = new Map<string, Set<string>>();
+
+  if (finalConfig.debug) {
+    console.log('ESPN MCP Server initialized with config:', finalConfig);
+  }
 
   // Tool handlers
   server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -981,204 +1011,54 @@ async function handlePromptGet(params: any) {
   }
 }
 
-// HTTP Server with modern streaming
+// HTTP Server with proper MCP StreamableHTTPServerTransport
 export function createHTTPServer(): express.Application {
   const app = express();
-  const server = createModernESPNServer();
+  const PORT = process.env.PORT || 8081;
 
-  // Set global references for HTTP handlers
-  globalTools = tools;
-  globalResources = staticResources;
-  globalPrompts = prompts;
-
+  // CORS configuration for deployment
   app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
-    credentials: true
+    origin: '*', // Configure appropriately for production
+    exposedHeaders: ['Mcp-Session-Id', 'mcp-protocol-version'],
+    allowedHeaders: ['Content-Type', 'mcp-session-id'],
   }));
-  app.use(express.json({ limit: '10mb' }));
 
-  // Security middleware
-  app.use((req, res, next) => {
-    const origin = req.get('Origin');
-    if (origin && !['http://localhost:3000', 'http://127.0.0.1:3000'].includes(origin)) {
-      return res.status(403).json({ error: 'Invalid origin' });
-    }
-    next();
-  });
+  app.use(express.json());
 
-  // Main MCP endpoint with proper JSON-RPC handling
-  app.post('/mcp', async (req, res) => {
+  // Main MCP endpoint using StreamableHTTPServerTransport
+  app.all('/mcp', async (req: express.Request, res: express.Response) => {
     try {
-      const request = req.body;
-      
-      // Validate JSON-RPC format
-      if (!request.jsonrpc || request.jsonrpc !== "2.0" || !request.method) {
-        return res.status(400).json({
-          jsonrpc: "2.0",
-          error: { code: -32600, message: "Invalid Request" },
-          id: request.id || null
+      // Parse configuration from query parameters
+      const rawConfig = parseConfig(req);
+      const config = configSchema.parse({
+        cacheTimeout: rawConfig.cacheTimeout || Number(process.env.CACHE_TIMEOUT) || 300000,
+        maxConcurrentRequests: rawConfig.maxConcurrentRequests || Number(process.env.MAX_CONCURRENT_REQUESTS) || 5,
+        enableStreaming: rawConfig.enableStreaming !== undefined ? rawConfig.enableStreaming : (process.env.ENABLE_STREAMING !== 'false'),
+        debug: rawConfig.debug !== undefined ? rawConfig.debug : (process.env.DEBUG === 'true'),
+      });
+
+      const server = createModernESPNServer(config);
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+      });
+
+      // Clean up on request close
+      res.on('close', () => {
+        transport.close();
+        server.close();
+      });
+
+      await server.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+    } catch (error) {
+      console.error('Error handling MCP request:', error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          jsonrpc: '2.0',
+          error: { code: -32603, message: 'Internal server error' },
+          id: null,
         });
       }
-
-      let response;
-      
-      switch (request.method) {
-        case 'initialize':
-          response = {
-            jsonrpc: "2.0",
-            result: {
-              protocolVersion: "2024-11-05",
-              capabilities: {
-                resources: { subscribe: true, listChanged: true },
-                prompts: { listChanged: true },
-                tools: { listChanged: true },
-                logging: {},
-                experimental: {
-                  httpStreaming: true,
-                  sessionManagement: true
-                }
-              },
-              serverInfo: {
-                name: "modern-espn-server",
-                version: "2.0.0"
-              }
-            },
-            id: request.id
-          };
-          break;
-
-        case 'tools/list':
-          response = {
-            jsonrpc: "2.0",
-            result: { tools: globalTools },
-            id: request.id
-          };
-          break;
-
-        case 'tools/call':
-          try {
-            const toolResult = await handleToolCall(request.params);
-            response = {
-              jsonrpc: "2.0",
-              result: toolResult,
-              id: request.id
-            };
-          } catch (error) {
-            response = {
-              jsonrpc: "2.0",
-              error: { 
-                code: -32603, 
-                message: error instanceof Error ? error.message : 'Tool execution failed' 
-              },
-              id: request.id
-            };
-          }
-          break;
-
-        case 'resources/list':
-          response = {
-            jsonrpc: "2.0",
-            result: { resources: globalResources },
-            id: request.id
-          };
-          break;
-
-        case 'resources/read':
-          try {
-            const resourceResult = await handleResourceRead(request.params);
-            response = {
-              jsonrpc: "2.0",
-              result: resourceResult,
-              id: request.id
-            };
-          } catch (error) {
-            response = {
-              jsonrpc: "2.0",
-              error: { 
-                code: -32603, 
-                message: error instanceof Error ? error.message : 'Resource read failed' 
-              },
-              id: request.id
-            };
-          }
-          break;
-
-        case 'prompts/list':
-          response = {
-            jsonrpc: "2.0",
-            result: { prompts: globalPrompts },
-            id: request.id
-          };
-          break;
-
-        case 'prompts/get':
-          try {
-            const promptResult = await handlePromptGet(request.params);
-            response = {
-              jsonrpc: "2.0",
-              result: promptResult,
-              id: request.id
-            };
-          } catch (error) {
-            response = {
-              jsonrpc: "2.0",
-              error: { 
-                code: -32603, 
-                message: error instanceof Error ? error.message : 'Prompt generation failed' 
-              },
-              id: request.id
-            };
-          }
-          break;
-
-        default:
-          response = {
-            jsonrpc: "2.0",
-            error: { code: -32601, message: `Method not found: ${request.method}` },
-            id: request.id
-          };
-      }
-
-      res.json(response);
-    } catch (error) {
-      console.error('MCP endpoint error:', error);
-      res.status(500).json({
-        jsonrpc: "2.0",
-        error: {
-          code: -32603,
-          message: error instanceof Error ? error.message : 'Internal server error'
-        },
-        id: req.body?.id || null
-      });
-    }
-  });
-
-  // SSE endpoint for streaming
-  app.get('/mcp', (req, res) => {
-    const acceptHeader = req.get('Accept') || '';
-    
-    if (acceptHeader.includes('text/event-stream')) {
-      res.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': req.get('Origin') || '*',
-        'Access-Control-Allow-Credentials': 'true'
-      });
-
-      // Send initial connection event
-      res.write(`data: ${JSON.stringify({ type: 'connected', timestamp: new Date().toISOString() })}\n\n`);
-
-      // Heartbeat
-      const heartbeat = setInterval(() => {
-        res.write(': heartbeat\n\n');
-      }, 30000);
-
-      req.on('close', () => {
-        clearInterval(heartbeat);
-      });
-    } else {
-      res.status(405).json({ error: 'Method not allowed. Use POST for JSON-RPC or Accept: text/event-stream for SSE.' });
     }
   });
 
@@ -1210,12 +1090,13 @@ export async function runSTDIOServer() {
 }
 
 // HTTP Server
-export async function runHTTPServer(port = 3000) {
+export async function runHTTPServer(port?: number) {
   try {
     const app = createHTTPServer();
+    const serverPort = port || Number(process.env.PORT) || 8081;
     
-    const httpServer = app.listen(port, '127.0.0.1', () => {
-      console.error(`Modern ESPN MCP Server (v2.0) running on http://127.0.0.1:${port}/mcp`);
+    const httpServer = app.listen(serverPort, () => {
+      console.error(`Modern ESPN MCP Server (v2.0) running on port ${serverPort}`);
       console.error('Features: Resources, Prompts, Tools, HTTP Streaming, Session Management');
     });
 
@@ -1263,13 +1144,13 @@ try {
 }
 
 if (isMainModule) {
+  const transport = process.env.TRANSPORT || 'stdio';
   const args = process.argv.slice(2);
-  console.error('Starting server with args:', args);
   
-  if (args.includes('--http')) {
+  if (transport === 'http' || args.includes('--http')) {
     const portIndex = args.indexOf('--port');
-    const port = portIndex !== -1 ? parseInt(args[portIndex + 1]) : 3000;
-    console.error(`Starting HTTP server on port ${port}...`);
+    const port = portIndex !== -1 ? parseInt(args[portIndex + 1]) : undefined;
+    console.error('Starting HTTP server...');
     runHTTPServer(port).catch((error) => {
       console.error('HTTP server startup error:', error);
       process.exit(1);
