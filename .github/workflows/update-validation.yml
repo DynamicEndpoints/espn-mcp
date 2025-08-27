@@ -1,0 +1,246 @@
+name: ESPN API Update Workflow
+on:
+  issues:
+    types: [opened, labeled]
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'tsconfig.json'
+
+jobs:
+  espn-api-validation:
+    if: contains(github.event.issue.labels.*.name, 'api-update') || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    name: Validate ESPN API Endpoints
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build project
+      run: npm run build
+      
+    - name: Test ESPN API Endpoints
+      run: |
+        echo "Testing core ESPN API endpoints..."
+        
+        # Test NBA teams endpoint
+        NBA_TEAMS=$(curl -s "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams")
+        TEAM_COUNT=$(echo $NBA_TEAMS | jq '.sports[0].leagues[0].teams | length')
+        if [ "$TEAM_COUNT" -eq 30 ]; then
+          echo "✅ NBA teams endpoint working (30 teams found)"
+        else
+          echo "❌ NBA teams endpoint failed (expected 30, got $TEAM_COUNT)"
+          exit 1
+        fi
+        
+        # Test NBA scoreboard
+        NBA_SCOREBOARD=$(curl -s "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard")
+        if echo $NBA_SCOREBOARD | jq -e '.leagues[0].name' > /dev/null; then
+          echo "✅ NBA scoreboard endpoint working"
+        else
+          echo "❌ NBA scoreboard endpoint failed"
+          exit 1
+        fi
+        
+        # Test NBA news
+        NBA_NEWS=$(curl -s "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news")
+        if echo $NBA_NEWS | jq -e '.articles[0].headline' > /dev/null; then
+          echo "✅ NBA news endpoint working"
+        else
+          echo "❌ NBA news endpoint failed"
+          exit 1
+        fi
+        
+        # Test team roster (Hawks example)
+        HAWKS_ROSTER=$(curl -s "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/1/roster")
+        if echo $HAWKS_ROSTER | jq -e '.athletes[0].fullName' > /dev/null; then
+          echo "✅ Team roster endpoint working"
+        else
+          echo "❌ Team roster endpoint failed"
+          exit 1
+        fi
+        
+        echo "All ESPN API endpoints validated successfully!"
+        
+    - name: Test MCP Tools
+      run: |
+        echo "Testing MCP server functionality..."
+        timeout 30s node build/modern-server.js &
+        SERVER_PID=$!
+        sleep 5
+        
+        # Test if server started without errors
+        if kill -0 $SERVER_PID 2>/dev/null; then
+          echo "✅ MCP server started successfully"
+          kill $SERVER_PID
+        else
+          echo "❌ MCP server failed to start"
+          exit 1
+        fi
+        
+    - name: Performance Test
+      run: |
+        echo "Running basic performance tests..."
+        
+        # Test response time for teams endpoint
+        START_TIME=$(date +%s%N)
+        curl -s "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams" > /dev/null
+        END_TIME=$(date +%s%N)
+        RESPONSE_TIME=$((($END_TIME - $START_TIME) / 1000000))
+        
+        echo "ESPN API response time: ${RESPONSE_TIME}ms"
+        
+        if [ $RESPONSE_TIME -lt 5000 ]; then
+          echo "✅ Response time acceptable (< 5s)"
+        else
+          echo "⚠️  Response time high (> 5s)"
+        fi
+
+  cache-validation:
+    if: contains(github.event.issue.labels.*.name, 'cache') || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    name: Validate Cache Updates
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build project
+      run: npm run build
+      
+    - name: Test Cache Functionality
+      run: |
+        echo "Testing cache implementation..."
+        
+        # Test cache creation and basic operations
+        node -e "
+        const { ModernCache } = require('./build/modern-server.js');
+        const cache = new ModernCache(60000);
+        
+        // Test cache set/get
+        cache.set('test-key', 'test-value', 30000);
+        const value = cache.get('test-key');
+        
+        if (value === 'test-value') {
+          console.log('✅ Cache set/get working');
+        } else {
+          console.log('❌ Cache set/get failed');
+          process.exit(1);
+        }
+        
+        // Test cache stats
+        const stats = cache.getStats();
+        if (stats.size === 1) {
+          console.log('✅ Cache stats working');
+        } else {
+          console.log('❌ Cache stats failed');
+          process.exit(1);
+        }
+        
+        cache.destroy();
+        console.log('Cache validation completed successfully!');
+        "
+
+  security-check:
+    runs-on: ubuntu-latest
+    name: Security Validation
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run security audit
+      run: npm audit --audit-level=moderate
+      
+    - name: Check for hardcoded secrets
+      run: |
+        echo "Checking for potential security issues..."
+        
+        # Check for hardcoded API keys or tokens
+        if grep -r -i "api.key\|token\|secret\|password" src/ --exclude-dir=node_modules; then
+          echo "⚠️  Potential hardcoded secrets found - please review"
+        else
+          echo "✅ No hardcoded secrets detected"
+        fi
+        
+        # Check for proper input validation
+        if grep -r "zod\|z\." src/; then
+          echo "✅ Input validation (Zod) detected"
+        else
+          echo "⚠️  Consider adding input validation"
+        fi
+
+  update-documentation:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    name: Update Documentation
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Check documentation updates
+      run: |
+        echo "Checking if documentation needs updates..."
+        
+        # Check if README needs updating based on changes
+        if git diff --name-only origin/main..HEAD | grep -E "(src/|package.json)"; then
+          if git diff --name-only origin/main..HEAD | grep -q "README.md"; then
+            echo "✅ README.md updated with code changes"
+          else
+            echo "⚠️  Consider updating README.md for code changes"
+          fi
+        fi
+        
+        # Check for new tools or endpoints
+        if git diff origin/main..HEAD -- src/ | grep -E "name:|endpoint:"; then
+          echo "🔍 New tools or endpoints detected - documentation review recommended"
+        fi
+
+  notify-completion:
+    needs: [espn-api-validation, cache-validation, security-check]
+    runs-on: ubuntu-latest
+    name: Notify Update Completion
+    if: always()
+    
+    steps:
+    - name: Update Status
+      run: |
+        if [ "${{ needs.espn-api-validation.result }}" == "success" ] && 
+           [ "${{ needs.cache-validation.result }}" == "success" ] && 
+           [ "${{ needs.security-check.result }}" == "success" ]; then
+          echo "🎉 All update validations passed!"
+        else
+          echo "❌ Some validations failed - please review"
+          exit 1
+        fi

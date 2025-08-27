@@ -838,6 +838,21 @@ export function createModernESPNServer(config = {}) {
                         case "hockey":
                             data = await espnClient.getNHLNews();
                             break;
+                        case "soccer":
+                            // For soccer, get news from major leagues
+                            const [premierLeagueNews, mlsNews, championsLeagueNews, laLigaNews] = await Promise.all([
+                                espnClient.getSoccerNews('eng.1').catch(() => null),
+                                espnClient.getSoccerNews('usa.1').catch(() => null),
+                                espnClient.getSoccerNews('uefa.champions').catch(() => null),
+                                espnClient.getSoccerNews('esp.1').catch(() => null)
+                            ]);
+                            data = {
+                                premierLeague: premierLeagueNews,
+                                mls: mlsNews,
+                                championsLeague: championsLeagueNews,
+                                laLiga: laLigaNews
+                            };
+                            break;
                         default:
                             data = await espnClient.getNews(sport);
                     }
