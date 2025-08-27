@@ -70,6 +70,152 @@ class ModernCache extends EventEmitter {
 }
 // ESPN API with modern patterns
 class ModernESPNClient {
+    // Football
+    async getCollegeFootballNews() {
+        return this.fetchData('/football/college-football/news');
+    }
+    async getCollegeFootballScores(params = {}) {
+        let url = '/football/college-football/scoreboard';
+        const q = [];
+        if (params.calendar)
+            q.push(`calendar=${params.calendar}`);
+        if (params.dates)
+            q.push(`dates=${params.dates}`);
+        if (q.length)
+            url += '?' + q.join('&');
+        return this.fetchData(url);
+    }
+    async getCollegeFootballGameSummary(gameId) {
+        return this.fetchData(`/football/college-football/summary?event=${gameId}`);
+    }
+    async getCollegeFootballTeam(team) {
+        return this.fetchData(`/football/college-football/teams/${team}`);
+    }
+    async getCollegeFootballRankings() {
+        return this.fetchData('/football/college-football/rankings');
+    }
+    async getNFLNews() {
+        return this.fetchData('/football/nfl/news');
+    }
+    async getNFLScores(params = {}) {
+        let url = '/football/nfl/scoreboard';
+        const q = [];
+        if (params.seasontype)
+            q.push(`seasontype=${params.seasontype}`);
+        if (params.week)
+            q.push(`week=${params.week}`);
+        if (params.dates)
+            q.push(`dates=${params.dates}`);
+        if (q.length)
+            url += '?' + q.join('&');
+        return this.fetchData(url);
+    }
+    async getNFLTeams() {
+        return this.fetchData('/football/nfl/teams');
+    }
+    async getNFLTeam(team) {
+        return this.fetchData(`/football/nfl/teams/${team}`);
+    }
+    // Baseball
+    async getMLBScores() {
+        return this.fetchData('/baseball/mlb/scoreboard');
+    }
+    async getMLBNews() {
+        return this.fetchData('/baseball/mlb/news');
+    }
+    async getMLBTeams() {
+        return this.fetchData('/baseball/mlb/teams');
+    }
+    async getMLBTeam(team) {
+        return this.fetchData(`/baseball/mlb/teams/${team}`);
+    }
+    async getCollegeBaseballScores() {
+        return this.fetchData('/baseball/college-baseball/scoreboard');
+    }
+    // Hockey
+    async getNHLScores() {
+        return this.fetchData('/hockey/nhl/scoreboard');
+    }
+    async getNHLNews() {
+        return this.fetchData('/hockey/nhl/news');
+    }
+    async getNHLTeams() {
+        return this.fetchData('/hockey/nhl/teams');
+    }
+    async getNHLTeam(team) {
+        return this.fetchData(`/hockey/nhl/teams/${team}`);
+    }
+    // Basketball
+    async getNBAScores() {
+        return this.fetchData('/basketball/nba/scoreboard');
+    }
+    async getNBANews() {
+        return this.fetchData('/basketball/nba/news');
+    }
+    async getNBATeams() {
+        return this.fetchData('/basketball/nba/teams');
+    }
+    async getNBATeam(team) {
+        return this.fetchData(`/basketball/nba/teams/${team}`);
+    }
+    async getWNBAScores() {
+        return this.fetchData('/basketball/wnba/scoreboard');
+    }
+    async getWNBANews() {
+        return this.fetchData('/basketball/wnba/news');
+    }
+    async getWNBATeams() {
+        return this.fetchData('/basketball/wnba/teams');
+    }
+    async getWNBATeam(team) {
+        return this.fetchData(`/basketball/wnba/teams/${team}`);
+    }
+    async getWomensCollegeBasketballScores() {
+        return this.fetchData('/basketball/womens-college-basketball/scoreboard');
+    }
+    async getWomensCollegeBasketballNews() {
+        return this.fetchData('/basketball/womens-college-basketball/news');
+    }
+    async getWomensCollegeBasketballTeams() {
+        return this.fetchData('/basketball/womens-college-basketball/teams');
+    }
+    async getWomensCollegeBasketballTeam(team) {
+        return this.fetchData(`/basketball/womens-college-basketball/teams/${team}`);
+    }
+    async getMensCollegeBasketballScores() {
+        return this.fetchData('/basketball/mens-college-basketball/scoreboard');
+    }
+    async getMensCollegeBasketballNews() {
+        return this.fetchData('/basketball/mens-college-basketball/news');
+    }
+    async getMensCollegeBasketballTeams() {
+        return this.fetchData('/basketball/mens-college-basketball/teams');
+    }
+    async getMensCollegeBasketballTeam(team) {
+        return this.fetchData(`/basketball/mens-college-basketball/teams/${team}`);
+    }
+    // Soccer (generic, league required)
+    async getSoccerScores(league) {
+        return this.fetchData(`/soccer/${league}/scoreboard`);
+    }
+    async getMLSScores() {
+        return this.fetchData('/soccer/mls/scoreboard');
+    }
+    async getPremierLeagueScores() {
+        return this.fetchData('/soccer/eng.1/scoreboard');
+    }
+    async getChampionsLeagueScores() {
+        return this.fetchData('/soccer/uefa.champions/scoreboard');
+    }
+    async getSoccerNews(league) {
+        return this.fetchData(`/soccer/${league}/news`);
+    }
+    async getSoccerTeams(league) {
+        return this.fetchData(`/soccer/${league}/teams`);
+    }
+    async getSoccerTeam(league, team) {
+        return this.fetchData(`/soccer/${league}/teams/${team}`);
+    }
     constructor(cacheTimeout = 300000) {
         this.baseUrl = "https://site.api.espn.com/apis/site/v2/sports";
         this.cache = new ModernCache(cacheTimeout);
@@ -125,6 +271,19 @@ class ModernESPNClient {
     onResourceUpdate(callback) {
         this.cache.on('resourceUpdated', callback);
     }
+    // Generic fallback methods for unsupported combinations
+    async getTeamDetails(sport, league, team) {
+        return this.fetchData(`/${sport}/${league}/teams/${team}`);
+    }
+    async getCollegeBaseballTeam(team) {
+        return this.fetchData(`/baseball/college-baseball/teams/${team}`);
+    }
+    async getCollegeBaseballTeams() {
+        return this.fetchData('/baseball/college-baseball/teams');
+    }
+    async getCollegeFootballTeams() {
+        return this.fetchData('/football/college-football/teams');
+    }
     destroy() {
         this.cache.destroy();
     }
@@ -146,7 +305,21 @@ const tools = [
                     type: "string",
                     description: "Specific league (optional)",
                     enum: ["nfl", "college-football", "nba", "mens-college-basketball", "womens-college-basketball",
-                        "mlb", "nhl", "mls", "premier-league", "champions-league"]
+                        "wnba", "mlb", "college-baseball", "nhl", "mls", "premier-league", "champions-league"]
+                },
+                dates: {
+                    type: "string",
+                    description: "Date in YYYYMMDD format (optional)",
+                    pattern: "^\\d{8}$"
+                },
+                week: {
+                    type: "string",
+                    description: "NFL week number (optional, for NFL only)"
+                },
+                seasontype: {
+                    type: "string",
+                    description: "Season type (1=preseason, 2=regular, 3=postseason) (optional, for NFL only)",
+                    enum: ["1", "2", "3"]
                 }
             },
             required: ["sport"]
@@ -165,10 +338,70 @@ const tools = [
                 },
                 league: {
                     type: "string",
-                    description: "Specific league (optional)"
+                    description: "Specific league (optional)",
+                    enum: ["nfl", "college-football", "nba", "mens-college-basketball", "womens-college-basketball",
+                        "wnba", "mlb", "college-baseball", "nhl"]
                 }
             },
             required: ["sport"]
+        }
+    },
+    {
+        name: "get_specific_team",
+        description: "Get detailed information about a specific team by team abbreviation",
+        inputSchema: {
+            type: "object",
+            properties: {
+                sport: {
+                    type: "string",
+                    enum: ["football", "basketball", "baseball", "hockey", "soccer"],
+                    description: "The sport"
+                },
+                league: {
+                    type: "string",
+                    description: "Specific league",
+                    enum: ["nfl", "college-football", "nba", "mens-college-basketball", "womens-college-basketball",
+                        "wnba", "mlb", "nhl"]
+                },
+                team: {
+                    type: "string",
+                    description: "Team abbreviation (e.g., 'all' for Allegheny, 'gt' for Georgia Tech, 'patriots' for New England)"
+                }
+            },
+            required: ["sport", "league", "team"]
+        }
+    },
+    {
+        name: "get_college_football_rankings",
+        description: "Get current college football rankings",
+        inputSchema: {
+            type: "object",
+            properties: {},
+            additionalProperties: false
+        }
+    },
+    {
+        name: "get_game_summary",
+        description: "Get detailed game summary information for a specific game",
+        inputSchema: {
+            type: "object",
+            properties: {
+                sport: {
+                    type: "string",
+                    enum: ["football"],
+                    description: "The sport (currently only football supported)"
+                },
+                league: {
+                    type: "string",
+                    enum: ["college-football"],
+                    description: "The league (currently only college-football supported)"
+                },
+                gameId: {
+                    type: "string",
+                    description: "Game identifier (e.g., '400934572' for 2017 Army vs Navy)"
+                }
+            },
+            required: ["sport", "league", "gameId"]
         }
     },
     {
@@ -198,7 +431,8 @@ const tools = [
             properties: {
                 sport: {
                     type: "string",
-                    description: "Specific sport for news (optional, defaults to general sports)"
+                    description: "Specific sport for news (optional, defaults to general sports)",
+                    enum: ["football", "basketball", "baseball", "hockey"]
                 },
                 limit: {
                     type: "number",
@@ -367,8 +601,68 @@ export function createModernESPNServer(config = {}) {
         try {
             switch (name) {
                 case "get_live_scores": {
-                    const { sport, league } = args;
-                    const data = await espnClient.getScoreboard(sport, league);
+                    const { sport, league, dates, week, seasontype } = args;
+                    let data;
+                    // Use specific ESPN endpoints for each sport/league combination
+                    switch (sport) {
+                        case "football":
+                            if (league === "nfl") {
+                                data = await espnClient.getNFLScores({ dates, week, seasontype });
+                            }
+                            else if (league === "college-football") {
+                                data = await espnClient.getCollegeFootballScores({ dates });
+                            }
+                            else {
+                                data = await espnClient.getScoreboard(sport, league);
+                            }
+                            break;
+                        case "basketball":
+                            if (league === "nba") {
+                                data = await espnClient.getNBAScores();
+                            }
+                            else if (league === "wnba") {
+                                data = await espnClient.getWNBAScores();
+                            }
+                            else if (league === "mens-college-basketball") {
+                                data = await espnClient.getMensCollegeBasketballScores();
+                            }
+                            else if (league === "womens-college-basketball") {
+                                data = await espnClient.getWomensCollegeBasketballScores();
+                            }
+                            else {
+                                data = await espnClient.getScoreboard(sport, league);
+                            }
+                            break;
+                        case "baseball":
+                            if (league === "mlb") {
+                                data = await espnClient.getMLBScores();
+                            }
+                            else if (league === "college-baseball") {
+                                data = await espnClient.getCollegeBaseballScores();
+                            }
+                            else {
+                                data = await espnClient.getScoreboard(sport, league);
+                            }
+                            break;
+                        case "hockey":
+                            if (league === "nhl") {
+                                data = await espnClient.getNHLScores();
+                            }
+                            else {
+                                data = await espnClient.getScoreboard(sport, league);
+                            }
+                            break;
+                        case "soccer":
+                            if (league) {
+                                data = await espnClient.getSoccerScores(league);
+                            }
+                            else {
+                                data = await espnClient.getScoreboard(sport, league);
+                            }
+                            break;
+                        default:
+                            data = await espnClient.getScoreboard(sport, league);
+                    }
                     return {
                         content: [
                             {
@@ -380,7 +674,61 @@ export function createModernESPNServer(config = {}) {
                 }
                 case "get_team_information": {
                     const { sport, league } = args;
-                    const data = await espnClient.getTeams(sport, league);
+                    let data;
+                    // Use specific ESPN endpoints for each sport/league combination
+                    switch (sport) {
+                        case "football":
+                            if (league === "nfl") {
+                                data = await espnClient.getNFLTeams();
+                            }
+                            else {
+                                data = await espnClient.getTeams(sport, league);
+                            }
+                            break;
+                        case "basketball":
+                            if (league === "nba") {
+                                data = await espnClient.getNBATeams();
+                            }
+                            else if (league === "wnba") {
+                                data = await espnClient.getWNBATeams();
+                            }
+                            else if (league === "mens-college-basketball") {
+                                data = await espnClient.getMensCollegeBasketballTeams();
+                            }
+                            else if (league === "womens-college-basketball") {
+                                data = await espnClient.getWomensCollegeBasketballTeams();
+                            }
+                            else {
+                                data = await espnClient.getTeams(sport, league);
+                            }
+                            break;
+                        case "baseball":
+                            if (league === "mlb") {
+                                data = await espnClient.getMLBTeams();
+                            }
+                            else {
+                                data = await espnClient.getTeams(sport, league);
+                            }
+                            break;
+                        case "hockey":
+                            if (league === "nhl") {
+                                data = await espnClient.getNHLTeams();
+                            }
+                            else {
+                                data = await espnClient.getTeams(sport, league);
+                            }
+                            break;
+                        case "soccer":
+                            if (league) {
+                                data = await espnClient.getSoccerTeams(league);
+                            }
+                            else {
+                                data = await espnClient.getTeams(sport, league);
+                            }
+                            break;
+                        default:
+                            data = await espnClient.getTeams(sport, league);
+                    }
                     return {
                         content: [
                             {
@@ -404,7 +752,36 @@ export function createModernESPNServer(config = {}) {
                 }
                 case "get_sports_news": {
                     const { sport, limit = 10 } = args;
-                    const data = await espnClient.getNews(sport);
+                    let data;
+                    // Use specific ESPN endpoints for each sport
+                    switch (sport) {
+                        case "football":
+                            // For football, we'll get both NFL and college football news
+                            const [nflNews, cfbNews] = await Promise.all([
+                                espnClient.getNFLNews().catch(() => null),
+                                espnClient.getCollegeFootballNews().catch(() => null)
+                            ]);
+                            data = { nfl: nflNews, collegefootball: cfbNews };
+                            break;
+                        case "basketball":
+                            // For basketball, get NBA, WNBA, and college basketball news
+                            const [nbaNews, wnbaNews, mensCbbNews, womensCbbNews] = await Promise.all([
+                                espnClient.getNBANews().catch(() => null),
+                                espnClient.getWNBANews().catch(() => null),
+                                espnClient.getMensCollegeBasketballNews().catch(() => null),
+                                espnClient.getWomensCollegeBasketballNews().catch(() => null)
+                            ]);
+                            data = { nba: nbaNews, wnba: wnbaNews, menscollege: mensCbbNews, womenscollege: womensCbbNews };
+                            break;
+                        case "baseball":
+                            data = await espnClient.getMLBNews();
+                            break;
+                        case "hockey":
+                            data = await espnClient.getNHLNews();
+                            break;
+                        default:
+                            data = await espnClient.getNews(sport);
+                    }
                     return {
                         content: [
                             {
@@ -425,6 +802,97 @@ export function createModernESPNServer(config = {}) {
                             }
                         ]
                     };
+                }
+                case "get_specific_team": {
+                    const { sport, league, team } = args;
+                    let data;
+                    switch (sport) {
+                        case "football":
+                            if (league === "college-football") {
+                                data = await espnClient.getCollegeFootballTeam(team);
+                            }
+                            else if (league === "nfl") {
+                                data = await espnClient.getNFLTeam(team);
+                            }
+                            else {
+                                data = await espnClient.getTeamDetails(sport, league, team);
+                            }
+                            break;
+                        case "basketball":
+                            if (league === "nba") {
+                                data = await espnClient.getNBATeam(team);
+                            }
+                            else if (league === "wnba") {
+                                data = await espnClient.getWNBATeam(team);
+                            }
+                            else if (league === "mens-college-basketball") {
+                                data = await espnClient.getMensCollegeBasketballTeam(team);
+                            }
+                            else if (league === "womens-college-basketball") {
+                                data = await espnClient.getWomensCollegeBasketballTeam(team);
+                            }
+                            else {
+                                data = await espnClient.getTeamDetails(sport, league, team);
+                            }
+                            break;
+                        case "baseball":
+                            if (league === "mlb") {
+                                data = await espnClient.getMLBTeam(team);
+                            }
+                            else if (league === "college-baseball") {
+                                data = await espnClient.getCollegeBaseballTeam(team);
+                            }
+                            else {
+                                data = await espnClient.getTeamDetails(sport, league, team);
+                            }
+                            break;
+                        case "hockey":
+                            if (league === "nhl") {
+                                data = await espnClient.getNHLTeam(team);
+                            }
+                            else {
+                                data = await espnClient.getTeamDetails(sport, league, team);
+                            }
+                            break;
+                        default:
+                            data = await espnClient.getTeamDetails(sport, league, team);
+                    }
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: `Team information for ${team} in ${sport} (${league}):\n\n${JSON.stringify(data, null, 2)}`
+                            }
+                        ]
+                    };
+                }
+                case "get_college_football_rankings": {
+                    const data = await espnClient.getCollegeFootballRankings();
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: `College Football Rankings:\n\n${JSON.stringify(data, null, 2)}`
+                            }
+                        ]
+                    };
+                }
+                case "get_game_summary": {
+                    const { sport, league, gameId } = args;
+                    if (sport === "football" && league === "college-football") {
+                        const data = await espnClient.getCollegeFootballGameSummary(gameId);
+                        return {
+                            content: [
+                                {
+                                    type: "text",
+                                    text: `Game Summary for ${gameId}:\n\n${JSON.stringify(data, null, 2)}`
+                                }
+                            ]
+                        };
+                    }
+                    else {
+                        throw new Error(`Game summary only supported for college football currently`);
+                    }
                 }
                 default:
                     throw new Error(`Unknown tool: ${name}`);
@@ -452,43 +920,61 @@ export function createModernESPNServer(config = {}) {
             let contents;
             switch (uri) {
                 case "espn://live-dashboard": {
-                    const [football, basketball, baseball] = await Promise.all([
-                        espnClient.getScoreboard("football", "nfl").catch(() => null),
-                        espnClient.getScoreboard("basketball", "nba").catch(() => null),
-                        espnClient.getScoreboard("baseball", "mlb").catch(() => null)
+                    const [nflScores, nbaScores, mlbScores, nhlScores] = await Promise.all([
+                        espnClient.getNFLScores().catch(() => null),
+                        espnClient.getNBAScores().catch(() => null),
+                        espnClient.getMLBScores().catch(() => null),
+                        espnClient.getNHLScores().catch(() => null)
                     ]);
                     contents = [{
                             uri,
                             mimeType: "application/json",
                             text: JSON.stringify({
                                 lastUpdated: new Date().toISOString(),
-                                football: football,
-                                basketball: basketball,
-                                baseball: baseball
+                                nfl: nflScores,
+                                nba: nbaScores,
+                                mlb: mlbScores,
+                                nhl: nhlScores
                             }, null, 2)
                         }];
                     break;
                 }
                 case "espn://breaking-news": {
-                    const news = await espnClient.getNews();
-                    contents = [{
-                            uri,
-                            mimeType: "application/json",
-                            text: JSON.stringify(news, null, 2)
-                        }];
-                    break;
-                }
-                case "espn://trending-athletes": {
-                    const [footballAthletes, basketballAthletes] = await Promise.all([
-                        espnClient.getAthletes("football", "nfl").catch(() => null),
-                        espnClient.getAthletes("basketball", "nba").catch(() => null)
+                    const [nflNews, nbaNews, mlbNews, nhlNews] = await Promise.all([
+                        espnClient.getNFLNews().catch(() => null),
+                        espnClient.getNBANews().catch(() => null),
+                        espnClient.getMLBNews().catch(() => null),
+                        espnClient.getNHLNews().catch(() => null)
                     ]);
                     contents = [{
                             uri,
                             mimeType: "application/json",
                             text: JSON.stringify({
-                                football: footballAthletes,
-                                basketball: basketballAthletes
+                                lastUpdated: new Date().toISOString(),
+                                nfl: nflNews,
+                                nba: nbaNews,
+                                mlb: mlbNews,
+                                nhl: nhlNews
+                            }, null, 2)
+                        }];
+                    break;
+                }
+                case "espn://trending-athletes": {
+                    const [nflTeams, nbaTeams, mlbTeams, nhlTeams] = await Promise.all([
+                        espnClient.getNFLTeams().catch(() => null),
+                        espnClient.getNBATeams().catch(() => null),
+                        espnClient.getMLBTeams().catch(() => null),
+                        espnClient.getNHLTeams().catch(() => null)
+                    ]);
+                    contents = [{
+                            uri,
+                            mimeType: "application/json",
+                            text: JSON.stringify({
+                                lastUpdated: new Date().toISOString(),
+                                nfl: nflTeams,
+                                nba: nbaTeams,
+                                mlb: mlbTeams,
+                                nhl: nhlTeams
                             }, null, 2)
                         }];
                     break;
@@ -502,6 +988,7 @@ export function createModernESPNServer(config = {}) {
                             uri,
                             mimeType: "application/json",
                             text: JSON.stringify({
+                                lastUpdated: new Date().toISOString(),
                                 nfl: nflStandings,
                                 nba: nbaStandings
                             }, null, 2)
@@ -640,9 +1127,75 @@ async function handleToolCall(params) {
     try {
         switch (name) {
             case "get_live_scores": {
-                const { sport, league } = args;
+                const { sport, league, dates, week, seasontype } = args;
                 const espnClient = new ModernESPNClient();
-                const data = await espnClient.getScoreboard(sport, league);
+                let data;
+                // Use specific ESPN endpoints for each sport/league combination
+                switch (sport) {
+                    case "football":
+                        if (league === "nfl") {
+                            data = await espnClient.getNFLScores({ dates, week, seasontype });
+                        }
+                        else if (league === "college-football") {
+                            data = await espnClient.getCollegeFootballScores({ dates });
+                        }
+                        else {
+                            data = await espnClient.getScoreboard(sport, league);
+                        }
+                        break;
+                    case "basketball":
+                        if (league === "nba") {
+                            data = await espnClient.getNBAScores();
+                        }
+                        else if (league === "wnba") {
+                            data = await espnClient.getWNBAScores();
+                        }
+                        else if (league === "mens-college-basketball") {
+                            data = await espnClient.getMensCollegeBasketballScores();
+                        }
+                        else if (league === "womens-college-basketball") {
+                            data = await espnClient.getWomensCollegeBasketballScores();
+                        }
+                        else {
+                            data = await espnClient.getScoreboard(sport, league);
+                        }
+                        break;
+                    case "baseball":
+                        if (league === "mlb") {
+                            data = await espnClient.getMLBScores();
+                        }
+                        else if (league === "college-baseball") {
+                            data = await espnClient.getCollegeBaseballScores();
+                        }
+                        else {
+                            data = await espnClient.getScoreboard(sport, league);
+                        }
+                        break;
+                    case "hockey":
+                        if (league === "nhl") {
+                            data = await espnClient.getNHLScores();
+                        }
+                        else {
+                            data = await espnClient.getScoreboard(sport, league);
+                        }
+                        break;
+                    case "soccer":
+                        if (league === "mls") {
+                            data = await espnClient.getMLSScores();
+                        }
+                        else if (league === "premier-league") {
+                            data = await espnClient.getPremierLeagueScores();
+                        }
+                        else if (league === "champions-league") {
+                            data = await espnClient.getChampionsLeagueScores();
+                        }
+                        else {
+                            data = await espnClient.getSoccerScores('mls');
+                        }
+                        break;
+                    default:
+                        data = await espnClient.getScoreboard(sport, league);
+                }
                 espnClient.destroy();
                 return {
                     content: [
@@ -656,7 +1209,67 @@ async function handleToolCall(params) {
             case "get_team_information": {
                 const { sport, league } = args;
                 const espnClient = new ModernESPNClient();
-                const data = await espnClient.getTeams(sport, league);
+                let data;
+                // Use specific ESPN endpoints for each sport/league combination
+                switch (sport) {
+                    case "football":
+                        if (league === "nfl") {
+                            data = await espnClient.getNFLTeams();
+                        }
+                        else if (league === "college-football") {
+                            data = await espnClient.getCollegeFootballTeams();
+                        }
+                        else {
+                            data = await espnClient.getTeams(sport, league);
+                        }
+                        break;
+                    case "basketball":
+                        if (league === "nba") {
+                            data = await espnClient.getNBATeams();
+                        }
+                        else if (league === "wnba") {
+                            data = await espnClient.getWNBATeams();
+                        }
+                        else if (league === "mens-college-basketball") {
+                            data = await espnClient.getMensCollegeBasketballTeams();
+                        }
+                        else if (league === "womens-college-basketball") {
+                            data = await espnClient.getWomensCollegeBasketballTeams();
+                        }
+                        else {
+                            data = await espnClient.getTeams(sport, league);
+                        }
+                        break;
+                    case "baseball":
+                        if (league === "mlb") {
+                            data = await espnClient.getMLBTeams();
+                        }
+                        else if (league === "college-baseball") {
+                            data = await espnClient.getCollegeBaseballTeams();
+                        }
+                        else {
+                            data = await espnClient.getTeams(sport, league);
+                        }
+                        break;
+                    case "hockey":
+                        if (league === "nhl") {
+                            data = await espnClient.getNHLTeams();
+                        }
+                        else {
+                            data = await espnClient.getTeams(sport, league);
+                        }
+                        break;
+                    case "soccer":
+                        if (league) {
+                            data = await espnClient.getSoccerTeams(league);
+                        }
+                        else {
+                            data = await espnClient.getTeams(sport, league);
+                        }
+                        break;
+                    default:
+                        data = await espnClient.getTeams(sport, league);
+                }
                 espnClient.destroy();
                 return {
                     content: [
@@ -684,7 +1297,35 @@ async function handleToolCall(params) {
             case "get_sports_news": {
                 const { sport, limit = 10 } = args;
                 const espnClient = new ModernESPNClient();
-                const data = await espnClient.getNews(sport);
+                let data;
+                switch (sport) {
+                    case "football":
+                        // For football, we'll get both NFL and college football news
+                        const [nflNews, cfbNews] = await Promise.all([
+                            espnClient.getNFLNews().catch(() => null),
+                            espnClient.getCollegeFootballNews().catch(() => null)
+                        ]);
+                        data = { nfl: nflNews, collegefootball: cfbNews };
+                        break;
+                    case "basketball":
+                        // For basketball, get NBA, WNBA, and college basketball news
+                        const [nbaNews, wnbaNews, mensCbbNews, womensCbbNews] = await Promise.all([
+                            espnClient.getNBANews().catch(() => null),
+                            espnClient.getWNBANews().catch(() => null),
+                            espnClient.getMensCollegeBasketballNews().catch(() => null),
+                            espnClient.getWomensCollegeBasketballNews().catch(() => null)
+                        ]);
+                        data = { nba: nbaNews, wnba: wnbaNews, menscollege: mensCbbNews, womenscollege: womensCbbNews };
+                        break;
+                    case "baseball":
+                        data = await espnClient.getMLBNews();
+                        break;
+                    case "hockey":
+                        data = await espnClient.getNHLNews();
+                        break;
+                    default:
+                        data = await espnClient.getNews(sport);
+                }
                 espnClient.destroy();
                 return {
                     content: [
@@ -708,6 +1349,104 @@ async function handleToolCall(params) {
                         }
                     ]
                 };
+            }
+            case "get_specific_team": {
+                const { sport, league, team } = args;
+                const espnClient = new ModernESPNClient();
+                let data;
+                switch (sport) {
+                    case "football":
+                        if (league === "college-football") {
+                            data = await espnClient.getCollegeFootballTeam(team);
+                        }
+                        else if (league === "nfl") {
+                            data = await espnClient.getNFLTeam(team);
+                        }
+                        else {
+                            data = await espnClient.getTeamDetails(sport, league, team);
+                        }
+                        break;
+                    case "basketball":
+                        if (league === "nba") {
+                            data = await espnClient.getNBATeam(team);
+                        }
+                        else if (league === "wnba") {
+                            data = await espnClient.getWNBATeam(team);
+                        }
+                        else if (league === "mens-college-basketball") {
+                            data = await espnClient.getMensCollegeBasketballTeam(team);
+                        }
+                        else if (league === "womens-college-basketball") {
+                            data = await espnClient.getWomensCollegeBasketballTeam(team);
+                        }
+                        else {
+                            data = await espnClient.getTeamDetails(sport, league, team);
+                        }
+                        break;
+                    case "baseball":
+                        if (league === "mlb") {
+                            data = await espnClient.getMLBTeam(team);
+                        }
+                        else if (league === "college-baseball") {
+                            data = await espnClient.getCollegeBaseballTeam(team);
+                        }
+                        else {
+                            data = await espnClient.getTeamDetails(sport, league, team);
+                        }
+                        break;
+                    case "hockey":
+                        if (league === "nhl") {
+                            data = await espnClient.getNHLTeam(team);
+                        }
+                        else {
+                            data = await espnClient.getTeamDetails(sport, league, team);
+                        }
+                        break;
+                    default:
+                        data = await espnClient.getTeamDetails(sport, league, team);
+                }
+                espnClient.destroy();
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Team information for ${team} in ${sport} (${league}):\n\n${JSON.stringify(data, null, 2)}`
+                        }
+                    ]
+                };
+            }
+            case "get_college_football_rankings": {
+                const espnClient = new ModernESPNClient();
+                const data = await espnClient.getCollegeFootballRankings();
+                espnClient.destroy();
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `College Football Rankings:\n\n${JSON.stringify(data, null, 2)}`
+                        }
+                    ]
+                };
+            }
+            case "get_game_summary": {
+                const { sport, league, gameId } = args;
+                const espnClient = new ModernESPNClient();
+                if (sport === "football" && league === "college-football") {
+                    const data = await espnClient.getCollegeFootballGameSummary(gameId);
+                    espnClient.destroy();
+                    return {
+                        content: [
+                            {
+                                type: "text",
+                                text: `Game Summary for ${gameId}:\n\n${JSON.stringify(data, null, 2)}`
+                            }
+                        ]
+                    };
+                }
+                else {
+                    espnClient.destroy();
+                    throw new Error(`Game summary only supported for college football currently`);
+                }
             }
             default:
                 throw new Error(`Unknown tool: ${name}`);
