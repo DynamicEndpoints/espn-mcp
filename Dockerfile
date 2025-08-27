@@ -2,17 +2,17 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install all dependencies (need dev deps for TypeScript compilation)
-RUN npm ci
+# Install dependencies only (skip prepare script during install)
+RUN npm ci --ignore-scripts
 
-# Copy source code
+# Copy source code after dependencies are installed
 COPY src/ ./src/
 
-# Build the application
+# Now build the application
 RUN npm run build
 
 # Create non-root user
