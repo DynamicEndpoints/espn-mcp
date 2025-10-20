@@ -853,6 +853,37 @@ export function createModernESPNServer(config = {}) {
                                 laLiga: laLigaNews
                             };
                             break;
+                        case "golf":
+                            // Golf requires PGA tour endpoint
+                            data = await espnClient.getNews('golf/pga');
+                            break;
+                        case "tennis":
+                            // Tennis requires ATP and WTA tour endpoints
+                            const [atpNews, wtaNews] = await Promise.all([
+                                espnClient.getNews('tennis/atp').catch(() => null),
+                                espnClient.getNews('tennis/wta').catch(() => null)
+                            ]);
+                            data = { atp: atpNews, wta: wtaNews };
+                            break;
+                        case "f1":
+                        case "formula1":
+                            // F1 racing news
+                            data = await espnClient.getNews('racing/f1');
+                            break;
+                        case "ncaa-basketball":
+                        case "college-basketball":
+                            // NCAA basketball (already handled above in basketball case)
+                            const [mensCbbNewsOnly, womensCbbNewsOnly] = await Promise.all([
+                                espnClient.getNews('basketball/mens-college-basketball').catch(() => null),
+                                espnClient.getNews('basketball/womens-college-basketball').catch(() => null)
+                            ]);
+                            data = { mens: mensCbbNewsOnly, womens: womensCbbNewsOnly };
+                            break;
+                        case "ncaa-football":
+                        case "college-football":
+                            // NCAA football (already handled above in football case)
+                            data = await espnClient.getNews('football/college-football');
+                            break;
                         default:
                             data = await espnClient.getNews(sport);
                     }
