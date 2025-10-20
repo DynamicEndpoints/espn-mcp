@@ -4,6 +4,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3.2-blue.svg)](https://www.typescriptlang.org/)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.17.4-purple.svg)](https://github.com/modelcontextprotocol/typescript-sdk)
+[![smithery badge](https://smithery.ai/badge/@DynamicEndpoints/espn-mcp)](https://smithery.ai/server/@DynamicEndpoints/espn-mcp)
 
 A modern, production-ready **Model Context Protocol (MCP) server** that provides comprehensive access to ESPN's hidden sports APIs. Built with enhanced tool handlers, advanced parameter support, and complete coverage of all major sports leagues.
 
@@ -45,6 +46,14 @@ A modern, production-ready **Model Context Protocol (MCP) server** that provides
 - **npm** or **yarn** package manager
 
 ## 🛠️ Installation
+
+### Installing via Smithery
+
+To install ESPN Server automatically via [Smithery](https://smithery.ai/server/@DynamicEndpoints/espn-mcp):
+
+```bash
+npx -y @smithery/cli install @DynamicEndpoints/espn-mcp
+```
 
 ### Quick Start
 
@@ -461,7 +470,7 @@ Multi-stage build optimized for production:
 ```dockerfile
 FROM node:18-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
+COPY package*.json ./  
 RUN npm ci --only=production
 
 FROM node:18-alpine
